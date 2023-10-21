@@ -7,12 +7,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Domain\Domain.csproj" />
-      <ProjectReference Include="..\Infrastucture\Infrastucture.csproj" />
+        <ProjectReference Include="..\Domain\Domain.csproj"/>
+        <ProjectReference Include="..\Infrastucture\Infrastucture.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="MonoTorrent" Version="3.0.0-beta.rev0159" />
+        <PackageReference Include="MonoTorrent" Version="3.0.0-beta.rev0159"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="Microsoft.AspNetCore.Http.Features">
+            <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\7.0.11\ref\net7.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+        </Reference>
+        <Reference Include="Microsoft.Extensions.Configuration.Abstractions">
+            <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\7.0.11\ref\net7.0\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
 </Project>
