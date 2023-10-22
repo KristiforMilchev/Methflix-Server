@@ -14,6 +14,9 @@
         <Reference Include="Microsoft.AspNetCore.Http.Features">
             <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\7.0.11\ref\net7.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
         </Reference>
+        <Reference Include="MonoTorrent.Client">
+          <HintPath>..\..\..\..\.nuget\packages\monotorrent\3.0.0-beta.rev0159\lib\net6.0\MonoTorrent.Client.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
 </Project>
