@@ -1,4 +1,6 @@
+using System.Collections.Specialized;
 using System.Text;
+using System.Web;
 using Domain.Dtos;
 using Infrastucture.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +31,7 @@ public class TorrentService : ITorrentService
 
 
 
-     public async Task StartServer(CancellationToken token)
+    public async Task StartServer(CancellationToken token)
     {
         // If we loaded no torrents, just exist. The user can put files in the torrents directory and start
         // the client again
@@ -205,8 +207,20 @@ public class TorrentService : ITorrentService
     {
         try
         {
-            var magnet = new MagnetLink(InfoHash.FromHex(url));
-            var torrentManager = await Engine.AddAsync(magnet, _downloadDirectory);
+            var uri = new Uri(url);
+            var queryParameters = HttpUtility.ParseQueryString(uri.Query);
+            var name = queryParameters["dn"];
+            var announceUrls = queryParameters.GetValues("tr");
+            var xt = queryParameters["xt"].Split(":");
+            var infoHash = InfoHash.FromHex(xt.Last());
+            var magnetLink = new MagnetLink(
+                infoHash,
+                name,
+                announceUrls,
+                webSeeds: null, // webSeeds and size are not provided in the magnet link
+                size: null
+            );
+             var torrentManager = await Engine.AddAsync(magnetLink, _downloadDirectory);
             await torrentManager.StartAsync();
             ActiveTorrents.Add(torrentManager);
             return true;
@@ -224,7 +238,8 @@ public class TorrentService : ITorrentService
         {
             var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
             if (exists == null) return false;
-            await exists.PauseAsync();
+            
+            await Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name)!.PauseAsync();
             return true;
         }
         catch (Exception e)
@@ -240,7 +255,7 @@ public class TorrentService : ITorrentService
         {
             var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
             if (exists == null) return false;
-            await exists.SaveFastResumeAsync();
+            await exists.StartAsync();
             return true;
         }
         catch (Exception e)
@@ -257,7 +272,16 @@ public class TorrentService : ITorrentService
             var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
             if (exists == null) return false;
             await exists.StopAsync();
-            File.Delete($"{_downloadDirectory}/{exists.Name}");
+            if (File.Exists($"{_downloadDirectory}/{exists.Name}"))
+            {
+                File.Delete($"{_downloadDirectory}/{exists.Name}");
+            }
+
+            if (Directory.Exists($"{_downloadDirectory}/{exists.Name}"))
+            {
+                Directory.Delete($"{_downloadDirectory}/{exists.Name}",true);
+            }
+            
             File.Delete($"{_torrentPath}/{exists.Name}");
             return true;
         }
