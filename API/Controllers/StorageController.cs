@@ -29,7 +29,7 @@ public class StorageController : ControllerBase
     {
         return StatusCode(200);
     }
-    
+
     [HttpPost("/v1/cancel-torrent-download")]
     public async Task<IActionResult> CancelTorrentDownload([FromBody] ScheduleTorrentDownloadRequest request)
     {
