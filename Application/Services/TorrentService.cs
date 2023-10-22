@@ -13,7 +13,8 @@ public class TorrentService : ITorrentService
     private readonly string _downloadDirectory;
     private readonly string _torrentPath;
     private readonly ITorrentNotifier _torrentNotifier;
-
+    private List<TorrentManager> ActiveTorrents { get; set; }
+    private ClientEngine Engine { get; }
     public TorrentService(IConfiguration configuration, ClientEngine engine, ITorrentNotifier notifier)
     {
         ActiveTorrents = new List<TorrentManager>();
@@ -24,104 +25,9 @@ public class TorrentService : ITorrentService
         LoadTorrentsFromFlder().ConfigureAwait(true).GetAwaiter().GetResult();
     }
 
-    private List<TorrentManager> ActiveTorrents { get; set; }
-    private ClientEngine Engine { get; }
 
-    public async Task<bool> StartDownloadFromUri(string url)
-    {
-        try
-        {
-            var magnet = new MagnetLink(InfoHash.FromHex(url));
-            var torrentManager = await Engine.AddAsync(magnet, _downloadDirectory);
-            await torrentManager.StartAsync();
-            ActiveTorrents.Add(torrentManager);
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
-    }
 
-    public async Task<bool> PauseDownload(string name)
-    {
-        try
-        {
-            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
-            if (exists == null) return false;
-            await exists.PauseAsync();
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
-    }
-
-    public async Task<bool> ResumeDownload(string name)
-    {
-        try
-        {
-            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
-            if (exists == null) return false;
-            await exists.SaveFastResumeAsync();
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
-    }
-
-    public async Task<bool> CancelDownload(string name)
-    {
-        try
-        {
-            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
-            if (exists == null) return false;
-            await exists.StopAsync();
-            File.Delete($"{_downloadDirectory}/{exists.Name}");
-            File.Delete($"{_torrentPath}/{exists.Name}");
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
-    }
-
-    public async Task<bool> StartDownloadFromFile(IFormFile file)
-    {
-        try
-        {
-            var uniqueFileName = file.FileName;
-            var filePath = Path.Combine(_torrentPath, uniqueFileName);
-
-            await using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(fileStream);
-            }
-
-            var settingsBuilder = new TorrentSettingsBuilder
-            {
-                MaximumConnections = 60
-            };
-            var manager = await Engine.AddAsync(filePath, _downloadDirectory, settingsBuilder.ToSettings());
-            ActiveTorrents.Add(manager);
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
-    }
-
-    public async Task StartServer(CancellationToken token)
+     public async Task StartServer(CancellationToken token)
     {
         // If we loaded no torrents, just exist. The user can put files in the torrents directory and start
         // the client again
@@ -287,6 +193,102 @@ public class TorrentService : ITorrentService
             Console.WriteLine(e);
         }
     }
+    
+    public async Task<bool> StartDownloadFromUri(string url)
+    {
+        try
+        {
+            var magnet = new MagnetLink(InfoHash.FromHex(url));
+            var torrentManager = await Engine.AddAsync(magnet, _downloadDirectory);
+            await torrentManager.StartAsync();
+            ActiveTorrents.Add(torrentManager);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+    public async Task<bool> PauseDownload(string name)
+    {
+        try
+        {
+            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
+            if (exists == null) return false;
+            await exists.PauseAsync();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+    public async Task<bool> ResumeDownload(string name)
+    {
+        try
+        {
+            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
+            if (exists == null) return false;
+            await exists.SaveFastResumeAsync();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+    public async Task<bool> CancelDownload(string name)
+    {
+        try
+        {
+            var exists = Engine.Torrents.FirstOrDefault(x => x.Torrent?.Name == name);
+            if (exists == null) return false;
+            await exists.StopAsync();
+            File.Delete($"{_downloadDirectory}/{exists.Name}");
+            File.Delete($"{_torrentPath}/{exists.Name}");
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+    public async Task<bool> StartDownloadFromFile(IFormFile file)
+    {
+        try
+        {
+            var uniqueFileName = file.FileName;
+            var filePath = Path.Combine(_torrentPath, uniqueFileName);
+
+            await using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var settingsBuilder = new TorrentSettingsBuilder
+            {
+                MaximumConnections = 60
+            };
+            var manager = await Engine.AddAsync(filePath, _downloadDirectory, settingsBuilder.ToSettings());
+            ActiveTorrents.Add(manager);
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
+   
 
     public ActiveTorrent? GetTorrentData(string name)
     {
