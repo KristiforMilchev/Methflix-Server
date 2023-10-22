@@ -13,14 +13,16 @@ public class TorrentService : ITorrentService
     private readonly string _downloadDirectory;
     private readonly string _torrentPath;
     private readonly ITorrentNotifier _torrentNotifier;
+    private bool IsRunning { get; set; }
     private List<TorrentManager> ActiveTorrents { get; set; }
     private ClientEngine Engine { get; }
-    public TorrentService(IConfiguration configuration, ClientEngine engine, ITorrentNotifier notifier)
+    public TorrentService(IConfiguration configuration,  ITorrentNotifier notifier)
     {
         ActiveTorrents = new List<TorrentManager>();
         _downloadDirectory = configuration["StorageManager:Internal"] ?? string.Empty;
         _torrentPath = configuration["StorageManager:TorrentStorage"] ?? string.Empty;
-        Engine = engine;
+        Engine = new ClientEngine();
+        IsRunning = false;
         _torrentNotifier = notifier;
         LoadTorrentsFromFlder().ConfigureAwait(true).GetAwaiter().GetResult();
     }
@@ -35,6 +37,7 @@ public class TorrentService : ITorrentService
         {
             Console.WriteLine($"No torrents found in '{_torrentPath}' or loaded in the system");
             Console.WriteLine("Exiting...");
+            IsRunning = false;
             return;
         }
 
@@ -62,8 +65,10 @@ public class TorrentService : ITorrentService
         // While the torrents are still running, print out some stats to the screen.
         // Details for all the loaded torrent managers are shown.
         var sb = new StringBuilder(1024);
+        
         while (Engine.IsRunning)
         {
+            IsRunning = true;
             sb.Remove(0, sb.Length);
 
             _torrentNotifier.AppendFormat(
@@ -178,6 +183,8 @@ public class TorrentService : ITorrentService
 
             await Task.Delay(5000, token);
         }
+
+        IsRunning = false;
     }
 
  
