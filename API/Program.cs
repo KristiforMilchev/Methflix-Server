@@ -9,6 +9,8 @@ builder.Services.AddControllers();
 
 //Injecting shared dependencies
 builder.Services.AddTransient<ITorrentService, TorrentService>();
+builder.Services.AddTransient<ITorrentNotifier, TorrentNotifier>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
