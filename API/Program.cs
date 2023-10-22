@@ -2,14 +2,15 @@ using Application.Services;
 using Infrastucture.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-
+IConfiguration configuration = builder.Configuration;
 // Add services to the container.
 
 builder.Services.AddControllers();
 
 //Injecting shared dependencies
-builder.Services.AddTransient<ITorrentService, TorrentService>();
-builder.Services.AddTransient<ITorrentNotifier, TorrentNotifier>();
+ITorrentNotifier notifier = new TorrentNotifier();
+builder.Services.AddSingleton<ITorrentNotifier>(notifier);
+builder.Services.AddSingleton<ITorrentService>(new TorrentService(configuration, notifier));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -19,7 +20,7 @@ var app = builder.Build();
 
 var torrentService = app.Services.GetService<ITorrentService>();
 var cta = new CancellationToken();
-await torrentService!.StartServer(cta);
+Task.Run((async () => await torrentService!.StartServer(cta)));
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

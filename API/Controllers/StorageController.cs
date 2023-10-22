@@ -33,7 +33,7 @@ public class StorageController : ControllerBase
     }
 
     [HttpPost("/v1/schedule-torrent")]
-    public async Task<IActionResult> ScheduleTorrent([FromBody] ScheduleTorrentDownloadRequest request)
+    public async Task<IActionResult> ScheduleTorrent([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var startDownloadFromUri = await _torrentService.StartDownloadFromUri(request.Url);
         return !startDownloadFromUri ? StatusCode(500) : Ok();
@@ -47,21 +47,21 @@ public class StorageController : ControllerBase
     }
     
     [HttpPost("/v1/stop-torrent-download")]
-    public async Task<IActionResult> StopTorrentDownload([FromBody] ScheduleTorrentDownloadRequest request)
+    public async Task<IActionResult> StopTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var pauseDownload = await _torrentService.PauseDownload(request.Name);
         return !pauseDownload ? StatusCode(500) : Ok();
     }
 
     [HttpPost("/v1/resume-torrent-download")]
-    public async Task<IActionResult> ResumeTorrentDownload([FromBody] ScheduleTorrentDownloadRequest request)
+    public async Task<IActionResult> ResumeTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var resumeDownload = await _torrentService.ResumeDownload(request.Name);
         return !resumeDownload ? StatusCode(500) : Ok();
     }
 
     [HttpPost("/v1/cancel-torrent-download")]
-    public async Task<IActionResult> CancelTorrentDownload([FromBody] ScheduleTorrentDownloadRequest request)
+    public async Task<IActionResult> CancelTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var cancelDownload = await _torrentService.CancelDownload(request.Name);
         return !cancelDownload ? StatusCode(500) : Ok();
