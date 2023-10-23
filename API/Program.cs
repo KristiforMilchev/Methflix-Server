@@ -1,5 +1,5 @@
 using Application.Services;
-using Infrastucture.Interfaces;
+using Infrastructure.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -8,9 +8,11 @@ IConfiguration configuration = builder.Configuration;
 builder.Services.AddControllers();
 
 //Injecting shared dependencies
-ITorrentNotifier notifier = new TorrentNotifier();
+var notifier = new TorrentNotifier();
 builder.Services.AddSingleton<ITorrentNotifier>(notifier);
 builder.Services.AddSingleton<ITorrentService>(new TorrentService(configuration, notifier));
+builder.Services.AddTransient<IFfmpegService, FfmpegService>();
+builder.Services.AddTransient<IStorageService, StorageService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

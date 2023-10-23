@@ -2,7 +2,7 @@ using System.Collections.Specialized;
 using System.Text;
 using System.Web;
 using Domain.Dtos;
-using Infrastucture.Interfaces;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using MonoTorrent;
