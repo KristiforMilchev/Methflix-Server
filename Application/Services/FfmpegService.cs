@@ -62,4 +62,32 @@ public class FfmpegService : IFfmpegService
         await conversion.ConvertAsync(new MediaFile(uniqueFileName, false), type, _moviesFolder);
         return $"{_moviesFolder}/{uniqueFileName}{type.ToString()}";
     }
+
+    public TimeSpan GetMovieLenght(string file)
+    {
+        var path = _storage.GetFilePath(file);
+        if (!System.IO.File.Exists(path))
+        {
+            return TimeSpan.Zero;
+        }
+        
+        using var process = new Process();
+        process.StartInfo.FileName = "ffprobe"; // Assumes ffprobe is in your system's PATH.
+        process.StartInfo.Arguments =
+            $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{path}\"";
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.CreateNoWindow = true;
+
+        process.Start();
+        var durationStr = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        var videoDuration = default(TimeSpan);
+
+        if (!double.TryParse(durationStr, out var durationSeconds)) return videoDuration;
+        videoDuration = TimeSpan.FromSeconds(durationSeconds);
+        Console.WriteLine($"Duration of the video: {videoDuration}");
+
+        return videoDuration;
+    }
 }
