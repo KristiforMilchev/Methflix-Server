@@ -1,54 +1,53 @@
+using System.Diagnostics;
+using Domain.Dtos;
 using FFmpeg.Net;
 using FFmpeg.Net.Data;
 using FFmpeg.Net.Enums;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
 public class VideoController : ControllerBase
 {
-    [HttpGet("{videoName}")]
-    public IActionResult GetVideo(string videoName)
+    private readonly string _segmentFolder;
+    private readonly IFfmpegService _ffmpegService;
+    private readonly IStorageService _storage;
+    public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService)
     {
-        // Specify the path to your video files directory.
-        var videoPath = "/run/media/kristifor/M2/movies/Ahsoka.S01.1008p.WEB.H265-RAW/unistudiosglobe.mp4";
+        _segmentFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
+        _ffmpegService = ffmpegService;
+        _storage = storageService;
+    }
+    
+    [HttpGet("/v1/download/{videoName}")]
+    public IActionResult Video(string videoName)
+    {
+        var exists = _storage.GetFilePath(videoName);
+        
+        if (!System.IO.File.Exists(exists)) return StatusCode(404);
 
-        if (!System.IO.File.Exists(videoPath)) return StatusCode(404);
+        var stream = System.IO.File.OpenRead(exists);
 
-        var stream = System.IO.File.OpenRead(videoPath);
+        return File(stream, "video/mp4");
+        
+    }
+    
+    [HttpGet("v1/segmented")]
+    public IActionResult GetSegmentedVideo(VideoStreamRequest request)
+    {
+        var chunk = _ffmpegService.GetChunk(request.SegmentFrom, request.SegmentTo, request.Movie);   
+        
+        Response.Headers.Add("Content-Type", "video/mp4");
+        Response.Headers.Add("Content-Disposition", $"inline; filename={chunk}");
 
-        return File(stream, "video/mp4"); // Adjust the media type based on your video format.
+        return PhysicalFile($"{_segmentFolder}{chunk}", "video/mp4");
     }
 
-    [HttpPost("Upload")]
-    public async Task<IActionResult> UploadVideo([FromForm] IFormFile file)
-    {
-        var outputFile = "output_video.mp4";
-
-        if (file == null ||
-            file.Length == 0) throw new Exception("Invalid file");
-
-        var uniqueFileName = GetUniqueFileName(file.FileName);
-        var filePath = uniqueFileName; // Save to wwwroot/uploads directory
-
-        await using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var conversion = new FFmpegClient(
-            new FFmpegClientOptions(
-                "/home/kristifor/software", true
-            )
-        );
-        await conversion.ConvertAsync(new MediaFile(filePath, false), VideoType.MP4, "converted");
-
-        Console.WriteLine("Conversion completed.");
-        return StatusCode(200);
-    }
+    
 
     [HttpPost]
-    [Route("uploadChunk")]
+    [Route("v1/upload-chunk")]
     public async Task<IActionResult> UploadChunk()
     {
         try
@@ -99,12 +98,4 @@ public class VideoController : ControllerBase
         // you have received the complete file, and you can do further processing.
     }
 
-    private string GetUniqueFileName(string fileName)
-    {
-        fileName = Path.GetFileName(fileName);
-        return Path.GetFileNameWithoutExtension(fileName)
-               + "_"
-               + Guid.NewGuid().ToString().Substring(0, 6)
-               + Path.GetExtension(fileName);
-    }
 }

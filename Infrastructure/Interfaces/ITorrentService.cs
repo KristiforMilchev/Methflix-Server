@@ -1,7 +1,7 @@
 using Domain.Dtos;
 using Microsoft.AspNetCore.Http;
 
-namespace Infrastucture.Interfaces;
+namespace Infrastructure.Interfaces;
 
 public interface ITorrentService
 {

@@ -2,7 +2,7 @@ using System.Text;
 using MonoTorrent.Client;
 using MonoTorrent.Trackers;
 
-namespace Application.Services;
+namespace Infrastructure.Interfaces;
 
 public interface ITorrentNotifier
 {

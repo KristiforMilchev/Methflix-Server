@@ -1,5 +1,5 @@
 using Domain.Dtos;
-using Infrastucture.Interfaces;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
