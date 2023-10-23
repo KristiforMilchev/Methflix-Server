@@ -1,11 +1,18 @@
 using Application.Services;
+using Domain.Context;
 using Infrastructure.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
 // Add services to the container.
-
+ 
 builder.Services.AddControllers();
+var connectionString = configuration.GetConnectionString("PostgradeSQL");
+builder.Services.AddDbContext<MethflixContext>(
+    options =>
+        options.UseNpgsql(connectionString)
+);
 
 //Injecting shared dependencies
 var notifier = new TorrentNotifier();
