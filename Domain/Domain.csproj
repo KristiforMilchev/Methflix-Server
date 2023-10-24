@@ -10,9 +10,21 @@
         <Reference Include="Microsoft.AspNetCore.Http.Features">
             <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\7.0.11\ref\net7.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
         </Reference>
+        <Reference Include="Microsoft.EntityFrameworkCore">
+          <HintPath>..\..\..\..\.nuget\packages\microsoft.entityframeworkcore\7.0.12\lib\net6.0\Microsoft.EntityFrameworkCore.dll</HintPath>
+        </Reference>
         <Reference Include="MonoTorrent.Client">
           <HintPath>..\..\..\..\.nuget\packages\monotorrent\3.0.0-beta.rev0159\lib\net6.0\MonoTorrent.Client.dll</HintPath>
         </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.12">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.11" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.Design" Version="1.1.0" />
     </ItemGroup>
 
     <ItemGroup>
