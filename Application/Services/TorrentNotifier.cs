@@ -1,5 +1,9 @@
 using System.Text;
+using API;
+using Domain.Models;
+using FFmpeg.Net.Enums;
 using Infrastructure.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using MonoTorrent.Client;
 using MonoTorrent.Trackers;
 
@@ -7,6 +11,7 @@ namespace Application.Services;
 
 public class TorrentNotifier : ITorrentNotifier
 {
+    
     private Top10Listener Listener { get; } = new (10);
 
     public  void OnManagerOnPeerConnected(object? o, PeerConnectedEventArgs e)
@@ -41,9 +46,11 @@ public class TorrentNotifier : ITorrentNotifier
         }
     }
 
-    public void OnTrackerManagerOnAnnounceComplete(object? sender, AnnounceResponseEventArgs e)
+    public async void OnTrackerManagerOnAnnounceComplete(object? sender, AnnounceResponseEventArgs e, TorrentManager 
+        manager)
     {
         Listener.WriteLine($"{e.Successful}: {e.Tracker}");
+        Notifier.Call(manager.Name, manager);
     }
     public void AppendSeparator(StringBuilder sb)
     {
@@ -62,5 +69,4 @@ public class TorrentNotifier : ITorrentNotifier
     }
 
     public void ExportListener() => Listener.ExportTo(Console.Out);
-    
 }

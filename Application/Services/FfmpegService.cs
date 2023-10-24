@@ -63,6 +63,21 @@ public class FfmpegService : IFfmpegService
         return $"{_moviesFolder}/{uniqueFileName}{type.ToString()}";
     }
 
+    public async Task<string> ConvertToBinary(string path, VideoType type, string outputFile = "output_video.mp4")
+    {
+        
+        var conversion = new FFmpegClient(
+            new FFmpegClientOptions(
+                "/home/kristifor/software",
+                true
+            )
+        );
+        
+        await conversion.ConvertAsync(new MediaFile(path, false), type, _moviesFolder);
+
+        return $"{_moviesFolder}/{path}{type.ToString()}";
+    }
+
     public TimeSpan GetMovieLenght(string file)
     {
         var path = _storage.GetFilePath(file);
