@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 
-namespace Domain.Models;
+namespace Domain.Context;
 
 public partial class MethflixContext : DbContext
 {

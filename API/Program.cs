@@ -1,7 +1,8 @@
+using Application.Repositories;
 using Application.Services;
 using Domain.Context;
-using Domain.Models;
 using Infrastructure.Interfaces;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,7 +21,7 @@ builder.Services.AddSingleton<ITorrentNotifier>(notifier);
 builder.Services.AddSingleton<ITorrentService>(new TorrentService(configuration, notifier));
 builder.Services.AddTransient<IFfmpegService, FfmpegService>();
 builder.Services.AddTransient<IStorageService, StorageService>();
-
+builder.Services.AddTransient<ITorrentRepository, TorrentRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

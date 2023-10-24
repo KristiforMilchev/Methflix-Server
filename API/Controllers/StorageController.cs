@@ -1,6 +1,9 @@
+using System.Web;
 using Domain.Dtos;
 using Infrastructure.Interfaces;
+using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using MonoTorrent.Client;
 
 namespace API.Controllers;
 
@@ -8,10 +11,12 @@ namespace API.Controllers;
 public class StorageController : ControllerBase
 {
     private readonly ITorrentService _torrentService;
+    private readonly ITorrentRepository _torrentRepository;
 
-    public StorageController(ITorrentService torrentService)
+    public StorageController(ITorrentService torrentService, ITorrentRepository torrentRepository)
     {
         _torrentService = torrentService;
+        _torrentRepository = torrentRepository;
     }
     
     [HttpGet("/v1/get-torrents")]
@@ -35,8 +40,25 @@ public class StorageController : ControllerBase
     [HttpPost("/v1/schedule-torrent")]
     public async Task<IActionResult> ScheduleTorrent([FromForm] ScheduleTorrentDownloadRequest request)
     {
+        var uri = new Uri(request.Url);
+
+        var queryParameters = HttpUtility.ParseQueryString(uri.Query);
+        var name = queryParameters["dn"];
+        if (name == string.Empty) return StatusCode(500);
+        
+        Notifier.Subscribe(name!, OnTorrentDownloaded);
         var startDownloadFromUri = await _torrentService.StartDownloadFromUri(request.Url);
         return !startDownloadFromUri ? StatusCode(500) : Ok();
+    }
+
+    private void OnTorrentDownloaded(object data)
+    {
+        if (data is not TorrentManager torrent)
+        {
+            return;
+        }
+        _torrentRepository.UpdateTorrentDownloadComplete(torrent.Name);
+        Notifier.Dispose(torrent.Name);
     }
 
     [HttpPost("/v1/upload-torrent-file")]
@@ -66,4 +88,6 @@ public class StorageController : ControllerBase
         var cancelDownload = await _torrentService.CancelDownload(request.Name);
         return !cancelDownload ? StatusCode(500) : Ok();
     }
+    
+    
 }

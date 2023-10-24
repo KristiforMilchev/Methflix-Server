@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Text;
 using System.Web;
 using Domain.Dtos;
+using Domain.Models;
 using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +19,7 @@ public class TorrentService : ITorrentService
     private bool IsRunning { get; set; }
     private List<TorrentManager> ActiveTorrents { get; set; }
     private ClientEngine Engine { get; }
+    
     public TorrentService(IConfiguration configuration,  ITorrentNotifier notifier)
     {
         ActiveTorrents = new List<TorrentManager>();
@@ -26,11 +28,9 @@ public class TorrentService : ITorrentService
         Engine = new ClientEngine();
         IsRunning = false;
         _torrentNotifier = notifier;
-        LoadTorrentsFromFlder().ConfigureAwait(true).GetAwaiter().GetResult();
+        LoadTorrentsFromFolder().ConfigureAwait(true).GetAwaiter().GetResult();
     }
-
-
-
+    
     public async Task StartServer(CancellationToken token)
     {
         // If we loaded no torrents, just exist. The user can put files in the torrents directory and start
@@ -56,7 +56,8 @@ public class TorrentService : ITorrentService
             manager.TorrentStateChanged += _torrentNotifier.OnManagerOnTorrentStateChanged;
 
             // Every time the tracker's state changes, this is fired
-            manager.TrackerManager.AnnounceComplete += _torrentNotifier.OnTrackerManagerOnAnnounceComplete;
+            manager.TrackerManager.AnnounceComplete += (sender, args) =>  _torrentNotifier
+                .OnTrackerManagerOnAnnounceComplete(sender, args, manager);
 
             // Start the torrentmanager. The file will then hash (if required) and begin downloading/seeding.
             // As EngineSettings.AutoSaveLoadDhtCache is enabled, any cached data will be loaded into the
@@ -357,7 +358,7 @@ public class TorrentService : ITorrentService
 
     }
 
-    private async Task LoadTorrentsFromFlder()
+    private async Task LoadTorrentsFromFolder()
     {
         // If the torrentsPath does not exist, we want to create it
         if (!Directory.Exists(_torrentPath))
@@ -366,6 +367,7 @@ public class TorrentService : ITorrentService
         // For each file in the torrents path that is a .torrent file, load it into the engine.
         foreach (var file in Directory.GetFiles(_torrentPath))
         {
+            
             if (!file.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase)) continue;
             try
             {
@@ -374,6 +376,7 @@ public class TorrentService : ITorrentService
                     MaximumConnections = 60
                 };
                 var manager = await Engine.AddAsync(file, _downloadDirectory, settingsBuilder.ToSettings());
+                
                 ActiveTorrents.Add(manager);
                 Console.WriteLine(manager.InfoHashes.V1OrV2.ToHex());
             }
