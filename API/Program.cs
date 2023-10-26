@@ -21,6 +21,9 @@ builder.Services.AddSingleton<ITorrentNotifier>(notifier);
 builder.Services.AddSingleton<ITorrentService>(new TorrentService(configuration, notifier));
 builder.Services.AddTransient<IFfmpegService, FfmpegService>();
 builder.Services.AddTransient<IStorageService, StorageService>();
+
+//Repositories
+builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<ITorrentRepository, TorrentRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

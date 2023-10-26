@@ -4,6 +4,7 @@ using FFmpeg.Net;
 using FFmpeg.Net.Data;
 using FFmpeg.Net.Enums;
 using Infrastructure.Interfaces;
+using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -13,11 +14,14 @@ public class VideoController : ControllerBase
     private readonly string _segmentFolder;
     private readonly IFfmpegService _ffmpegService;
     private readonly IStorageService _storage;
-    public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService)
+    private readonly IMovieRepository _movieRepository;
+    public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService,
+        IMovieRepository movieRepository)
     {
         _segmentFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
         _ffmpegService = ffmpegService;
         _storage = storageService;
+        _movieRepository = movieRepository;
     }
     
     [HttpGet("/v1/download/{videoName}")]
@@ -97,5 +101,30 @@ public class VideoController : ControllerBase
         // When you receive the last chunk (endByte == totalSize - 1), 
         // you have received the complete file, and you can do further processing.
     }
+    
+    [HttpPost("/v1/stream/initial_chunk")]
+    public async Task<IActionResult> GetInitialChunk([FromBody] StreamRequest fileRequest)
+    {
+        var movie = await _movieRepository.GetMovieById(fileRequest.FileId);
+        if (movie == null) return StatusCode(500);
+        // Read the file length.
+        var fileLength = new FileInfo(movie.Path).Length;
+
+        // Read the first chunk from the file. Adjust the chunk size as needed.
+        const int chunkSize = 1024 * 1024; // 1 MB
+        var buffer = new byte[chunkSize];
+        await using var fs = new FileStream(movie.Path, FileMode.Open, FileAccess.Read);
+        var bytesRead = fs.Read(buffer, 0, chunkSize);
+
+        if (bytesRead > 0)
+        {
+            // Return the length of the file and the first chunk and the time of the movie.
+            return Ok(new { FileLength = fileLength, FirstChunk = buffer, MovieLenght = movie.TimeData });
+        }
+
+        return BadRequest("Error reading the file.");
+    }
+    
+    
 
 }
