@@ -12,24 +12,32 @@ public class FfmpegService : IFfmpegService
 {
     private readonly IStorageService _storage;
     private readonly string _moviesFolder;
+    private readonly string _streamingFolder;
     public FfmpegService(IStorageService storageService, IConfiguration configuration)
     {
         _storage = storageService;
         _moviesFolder = configuration["StorageManager:Internal"] ?? string.Empty;
+        _streamingFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
     }
     
-    public string GetChunk(int start, int end, string file)
+    public string GetChunk(int start, int end, string file, string name)
     {
         var movie = _storage.GetFileName(file);
+        var extension = _storage.GetFileExtension(file);
         // Validate and adjust the startTime and duration as needed.
         if (start < 0) start = 0;
         if (end <= 0) end = 10; // Default duration in seconds.
+        if (!Directory.Exists($"{_streamingFolder}/{name}"))
+            Directory.CreateDirectory($"{_streamingFolder}/{name}");
 
-        var outputSegmentPath = $"segment_{file}_{start}_{end}.mp4";
+        if (File.Exists($"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}"))
+            return $"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}";
+        
+        var outputSegmentPath = $"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}";
         var startInfo = new ProcessStartInfo
         {
             FileName = "ffmpeg",
-            Arguments = $"-ss {start} -i {movie} -t {end} -c copy {outputSegmentPath}",
+            Arguments = $"-ss {start} -i {file} -t {end} -c copy {outputSegmentPath}",
             RedirectStandardOutput = true,
             UseShellExecute = false,
             CreateNoWindow = true
@@ -39,7 +47,7 @@ public class FfmpegService : IFfmpegService
         process.StartInfo = startInfo;
         process.Start();
         process.WaitForExit();
-        return file;
+        return outputSegmentPath;
     }
 
     public async Task<string> ConvertTo(IFormFile data, VideoType type, string outputFile = "output_video.mp4")

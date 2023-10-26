@@ -43,11 +43,8 @@ public class VideoController : ControllerBase
             return StatusCode(500);
         }
 
-        // Validate the requested segment range.
-        if (request.SegmentFrom < 0 || request.SegmentTo <= 0 || request.SegmentFrom >= request.SegmentTo)
-        {
-            return BadRequest("Invalid segment range.");
-        }
+  
+        
 
         // Determine the next segment to serve.
         var nextSegment = request.LastSegment + 1;
@@ -60,7 +57,7 @@ public class VideoController : ControllerBase
         var nextSegmentTo = (nextSegment + 1) * segmentDuration;
 
         // Use your existing GetChunk method to get the next segment.
-        var chunk = _ffmpegService.GetChunk(nextSegmentFrom, nextSegmentTo, movie.Path);
+        var chunk = _ffmpegService.GetChunk(nextSegmentFrom, nextSegmentTo, movie.Path, movie.Name);
 
         if (string.IsNullOrEmpty(chunk)) return BadRequest("No more segments available.");
         // Update the last segment.
@@ -71,7 +68,7 @@ public class VideoController : ControllerBase
         Response.Headers.Add("Content-Disposition", $"inline; filename={chunk}");
         
         // Serve the next segment.
-        return PhysicalFile($"{_segmentFolder}{chunk}", "video/mp4");
+        return PhysicalFile(chunk, "video/mp4");
     }
 
     [HttpPost]

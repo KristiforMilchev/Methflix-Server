@@ -89,6 +89,10 @@ public class TorrentRepository : ITorrentRepository
                 
         // var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
         var lenght =  _ffmpegService.GetMovieLenght(filePath);
+
+        var exists = await _context.Movies.FirstOrDefaultAsync(x => x.Name == torrent.Name);
+        if (exists != null) return false;
+        
         _context.Movies.Add(
             new Movie
             {
