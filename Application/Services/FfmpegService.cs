@@ -80,16 +80,10 @@ public class FfmpegService : IFfmpegService
 
     public TimeSpan GetMovieLenght(string file)
     {
-        var path = _storage.GetFilePath(file);
-        if (!System.IO.File.Exists(path))
-        {
-            return TimeSpan.Zero;
-        }
-        
         using var process = new Process();
         process.StartInfo.FileName = "ffprobe"; // Assumes ffprobe is in your system's PATH.
         process.StartInfo.Arguments =
-            $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{path}\"";
+            $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{file}\"";
         process.StartInfo.RedirectStandardOutput = true;
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.CreateNoWindow = true;

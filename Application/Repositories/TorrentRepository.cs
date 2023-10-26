@@ -78,30 +78,31 @@ public class TorrentRepository : ITorrentRepository
         foreach (var torrentManagerFile in torrentManager.Files)
         {
             var filePath = torrentManagerFile.DownloadCompleteFullPath;
-            var filesInFolder = Directory.GetFiles(filePath);
-            foreach (var s in filesInFolder)
-            {
-                var extension = _storage.GetFileExtension(s);
-                if (!VideoFileFormats.Formats.Contains(extension.ToLower())) continue;
-                
-                // var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
-                var lenght =  _ffmpegService.GetMovieLenght(filePath);
-                _context.Movies.Add(
-                    new Movie
-                    {
-                        CategoryId = category,
-                        Torrent = torrent,
-                        Name = torrentManager.Name,
-                        Path = filePath,
-                        TimeData = lenght,
-                        TorrentId = torrent.Id 
-                    }
-                );
-        
-                await _context.SaveChangesAsync();
-            }
-        
+            await AddMovie(filePath, category, torrent);
         }
+    }
+
+    private async Task<bool> AddMovie(string filePath, int category, Dtorrent torrent)
+    {
+        var extension = _storage.GetFileExtension(filePath);
+        if (!VideoFileFormats.Formats.Contains(extension.ToLower())) return false;
+                
+        // var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
+        var lenght =  _ffmpegService.GetMovieLenght(filePath);
+        _context.Movies.Add(
+            new Movie
+            {
+                CategoryId = category,
+                Torrent = torrent,
+                Name = torrent.Name,
+                Path = filePath,
+                TimeData = lenght,
+                TorrentId = torrent.Id 
+            }
+        );
+        
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> DeleteTorrent(int id)
