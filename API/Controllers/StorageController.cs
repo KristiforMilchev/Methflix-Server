@@ -89,6 +89,4 @@ public class StorageController : ControllerBase
         var cancelDownload = await _torrentService.CancelDownload(request.Name);
         return !cancelDownload ? StatusCode(500) : Ok();
     }
-    
-    
 }
