@@ -13,9 +13,9 @@ public partial class AccessKey
 
     public int? CreatedBy { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public string? CreatedAt { get; set; }
 
-    public DateTime? RemovedAt { get; set; }
+    public string? RemovedAt { get; set; }
 
     public bool? IsDeleted { get; set; }
 

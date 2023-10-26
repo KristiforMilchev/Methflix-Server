@@ -15,7 +15,7 @@ public partial class Upload
 
     public int RequestedBy { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public string? CreatedAt { get; set; }
 
     public virtual Category Category { get; set; } = null!;
 

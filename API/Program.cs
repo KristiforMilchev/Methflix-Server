@@ -33,10 +33,10 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-
+var scope = app.Services.CreateScope();
 var torrentService = app.Services.GetService<ITorrentService>();
-var context = app.Services.GetService<MethflixContext>();
-var torrentRepository = app.Services.GetService<ITorrentRepository>();
+var context = scope.ServiceProvider.GetService<MethflixContext>();
+var torrentRepository = scope.ServiceProvider.GetService<ITorrentRepository>();
 
 using var common = new Common(torrentRepository!, context!);
 

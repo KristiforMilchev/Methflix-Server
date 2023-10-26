@@ -11,11 +11,11 @@ public partial class AccessRole
 
     public int? Priority { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public string? CreatedAt { get; set; }
 
-    public DateTime? CreatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public int? UpdatedAt { get; set; }
 
     public int? UpdatedBy { get; set; }
 

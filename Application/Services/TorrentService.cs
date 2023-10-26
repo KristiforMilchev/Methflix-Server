@@ -51,10 +51,9 @@ public class TorrentService : ITorrentService
             manager.ConnectionAttemptFailed += _torrentNotifier.OnManagerOnConnectionAttemptFailed;
             // Every time a piece is hashed, this is fired.
             manager.PieceHashed +=_torrentNotifier. OnManagerOnPieceHashed;
-
             // Every time the state changes (Stopped -> Seeding -> Downloading -> Hashing) this is fired
             manager.TorrentStateChanged += _torrentNotifier.OnManagerOnTorrentStateChanged;
-
+            
             // Every time the tracker's state changes, this is fired
             manager.TrackerManager.AnnounceComplete += (sender, args) =>  _torrentNotifier
                 .OnTrackerManagerOnAnnounceComplete(sender, args, manager);

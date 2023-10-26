@@ -1,4 +1,5 @@
 using System.Web;
+using Application;
 using Domain.Dtos;
 using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
@@ -53,11 +54,11 @@ public class StorageController : ControllerBase
 
     private void OnTorrentDownloaded(object data)
     {
-        if (data is not TorrentManager torrent)
-        {
-            return;
-        }
-        _torrentRepository.UpdateTorrentDownloadComplete(torrent.Name);
+        if (data is not TorrentManager torrent) return;
+        
+        if(torrent.Progress < 100) return;
+        
+        _torrentRepository.UpdateTorrentDownloadComplete(torrent);
         Notifier.Dispose(torrent.Name);
     }
 

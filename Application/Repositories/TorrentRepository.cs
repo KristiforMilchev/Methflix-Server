@@ -5,6 +5,7 @@ using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MonoTorrent.Client;
 
 namespace Application.Repositories;
 
@@ -12,6 +13,7 @@ public class TorrentRepository : ITorrentRepository
 {
     private readonly MethflixContext _context;
     private readonly string _downloadFolder;
+    private readonly string _torrentFolder;
     private readonly IFfmpegService _ffmpegService;
     private readonly IStorageService _storage;
 
@@ -20,6 +22,7 @@ public class TorrentRepository : ITorrentRepository
     {
         _context = context;
         _downloadFolder = configuration["StorageManager:Internal"] ?? string.Empty;
+        _torrentFolder = configuration["StorageManager:TorrentStorage"] ?? string.Empty;
         _ffmpegService = ffmpegService;
         _storage = storageService;
     }
@@ -33,7 +36,7 @@ public class TorrentRepository : ITorrentRepository
                 new Dtorrent
                 {
                     Name = name,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow.Ticks.ToString(),
                     CreatedBy = -1,
                     IsDownloaded = false,
                     IsSeeding = true,
@@ -45,31 +48,60 @@ public class TorrentRepository : ITorrentRepository
         }
     }
 
-    public async Task UpdateTorrentDownloadComplete(string name, int category = 1)
+    public async Task UpdateTorrentDownloadComplete(TorrentManager  torrentManager, int category = 1)
     {
-        var torrent = await _context.Dtorrents.FirstOrDefaultAsync(x => x.Name == name);
-        if (torrent == null) return; 
+        var torrent = await _context.Dtorrents.FirstOrDefaultAsync(x => x.Name == torrentManager.Name);
+        if (torrent == null)
+        {
+            var res = await _context.Dtorrents.AddAsync(
+                new Dtorrent
+                {
+                    Name = torrentManager.Name,
+                    CreatedAt = DateTime.UtcNow.Ticks.ToString(),
+                    CreatedBy = 1,
+                    IsDownloaded = true,
+                    Location = $"{_torrentFolder}/{torrentManager.Name}.torrent",
+                    IsSeeding = true,
+                    RequestedBy = 1,
+                }
+            );
+            torrent = res.Entity;
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            torrent.IsDownloaded = true;
+            _context.Attach(torrent);
+            _context.Update(torrent);
+        }
         
-        torrent.IsDownloaded = true;
-        _context.Attach(torrent);
-        _context.Update(torrent);
-        
-        var extension = _storage.GetFileExtension(name);
-        var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
-        var lenght =  _ffmpegService.GetMovieLenght($"{_downloadFolder}/{result}");
-        _context.Movies.Add(
-            new Movie
+        foreach (var torrentManagerFile in torrentManager.Files)
+        {
+            var filePath = torrentManagerFile.DownloadCompleteFullPath;
+            var filesInFolder = Directory.GetFiles(filePath);
+            foreach (var s in filesInFolder)
             {
-                CategoryId = category,
-                Torrent = torrent,
-                Name = name,
-                Path = $"{_downloadFolder}/{result}",
-                TimeData = lenght,
-                TorrentId = torrent.Id 
-            }
-        );
+                var extension = _storage.GetFileExtension(s);
+                if (!VideoFileFormats.Formats.Contains(extension.ToLower())) continue;
+                
+                // var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
+                var lenght =  _ffmpegService.GetMovieLenght(filePath);
+                _context.Movies.Add(
+                    new Movie
+                    {
+                        CategoryId = category,
+                        Torrent = torrent,
+                        Name = torrentManager.Name,
+                        Path = filePath,
+                        TimeData = lenght,
+                        TorrentId = torrent.Id 
+                    }
+                );
         
-        await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
+            }
+        
+        }
     }
 
     public async Task<bool> DeleteTorrent(int id)

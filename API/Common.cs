@@ -1,3 +1,4 @@
+using Application;
 using Domain.Context;
 using Infrastructure.Repositories;
 using MonoTorrent.Client;
@@ -22,7 +23,9 @@ public class Common :IDisposable
             return;
         }
         
-        _torrentRepository.UpdateTorrentDownloadComplete(torrent.Name);
+        if(torrent.Progress < 100) return;
+        
+        _torrentRepository.UpdateTorrentDownloadComplete(torrent);
         Notifier.Dispose(torrent.Name);
     }
 
