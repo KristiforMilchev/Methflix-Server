@@ -1,5 +1,4 @@
 using System.Text;
-using API;
 using Domain.Models;
 using FFmpeg.Net.Enums;
 using Infrastructure.Interfaces;
@@ -42,6 +41,9 @@ public class TorrentNotifier : ITorrentNotifier
     {
         lock (Listener)
         {
+            if (e.NewState == TorrentState.Seeding)
+            {
+            }
             Listener.WriteLine($"OldState: {e.OldState} NewState: {e.NewState}");
         }
     }
@@ -49,8 +51,13 @@ public class TorrentNotifier : ITorrentNotifier
     public async void OnTrackerManagerOnAnnounceComplete(object? sender, AnnounceResponseEventArgs e, TorrentManager 
         manager)
     {
+        if (manager.Complete)
+        {
+            Console.WriteLine(manager.Name);
+            Notifier.Call(manager.Name, manager);
+            Notifier.Call("on_torrent_downloaded", manager);
+        }
         Listener.WriteLine($"{e.Successful}: {e.Tracker}");
-        Notifier.Call(manager.Name, manager);
     }
     public void AppendSeparator(StringBuilder sb)
     {

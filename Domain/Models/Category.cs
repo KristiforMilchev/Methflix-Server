@@ -11,11 +11,11 @@ public partial class Category
 
     public int CreatedBy { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public string CreatedAt { get; set; } = null!;
 
     public int? UpdatedBy { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedAt { get; set; }
 
     public int? IsDeleted { get; set; }
 

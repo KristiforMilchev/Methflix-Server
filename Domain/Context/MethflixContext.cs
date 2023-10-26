@@ -36,9 +36,6 @@ public partial class MethflixContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("AccessKeys_pk");
 
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.RemovedAt).HasColumnType("timestamp without time zone");
-
             entity.HasOne(d => d.Account).WithMany(p => p.AccessKeys)
                 .HasForeignKey(d => d.AccountId)
                 .HasConstraintName("AccessKeys_Accounts_Id_fk");
@@ -48,18 +45,12 @@ public partial class MethflixContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("AccessRoles_pk");
 
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.CreatedBy).HasColumnType("timestamp without time zone");
             entity.Property(e => e.IsDeleted).HasDefaultValueSql("false");
-            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<Account>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("Accounts_pk");
-
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp without time zone");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Accounts)
                 .HasForeignKey(d => d.RoleId)
@@ -72,9 +63,6 @@ public partial class MethflixContext : DbContext
             entity.HasKey(e => e.Id).HasName("Category_pk");
 
             entity.ToTable("Category");
-
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp without time zone");
         });
 
         modelBuilder.Entity<Dtorrent>(entity =>
@@ -82,9 +70,6 @@ public partial class MethflixContext : DbContext
             entity.HasKey(e => e.Id).HasName("DTorrents_pk");
 
             entity.ToTable("DTorrents");
-
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
-            entity.Property(e => e.UpdatedAt).HasColumnType("timestamp without time zone");
 
             entity.HasOne(d => d.RequestedByNavigation).WithMany(p => p.Dtorrents)
                 .HasForeignKey(d => d.RequestedBy)
@@ -127,8 +112,6 @@ public partial class MethflixContext : DbContext
         modelBuilder.Entity<Upload>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("Uploads_pk");
-
-            entity.Property(e => e.CreatedAt).HasColumnType("timestamp without time zone");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Uploads)
                 .HasForeignKey(d => d.CategoryId)
