@@ -42,6 +42,12 @@ public class TorrentNotifier : ITorrentNotifier
     {
         lock (Listener)
         {
+            if (e.NewState == TorrentState.Seeding)
+            {
+                Console.WriteLine(e.TorrentManager);
+                Notifier.Call(e.TorrentManager.Name, e.TorrentManager);
+                Notifier.Call("on_torrent_downloaded", e.TorrentManager);
+            }
             Listener.WriteLine($"OldState: {e.OldState} NewState: {e.NewState}");
         }
     }
@@ -50,7 +56,6 @@ public class TorrentNotifier : ITorrentNotifier
         manager)
     {
         Listener.WriteLine($"{e.Successful}: {e.Tracker}");
-        Notifier.Call(manager.Name, manager);
     }
     public void AppendSeparator(StringBuilder sb)
     {

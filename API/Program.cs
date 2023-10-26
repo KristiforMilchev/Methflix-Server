@@ -1,9 +1,11 @@
+using API;
 using Application.Repositories;
 using Application.Services;
 using Domain.Context;
 using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using MonoTorrent.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -31,7 +33,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+
 var torrentService = app.Services.GetService<ITorrentService>();
+var context = app.Services.GetService<MethflixContext>();
+var torrentRepository = app.Services.GetService<ITorrentRepository>();
+
+using var common = new Common(torrentRepository!, context!);
+
 var cta = new CancellationToken();
 Task.Run((async () => await torrentService!.StartServer(cta)));
 // Configure the HTTP request pipeline.
