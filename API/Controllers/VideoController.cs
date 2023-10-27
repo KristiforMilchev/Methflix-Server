@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
+[Route("/api/v1/[controller]")]
+[ApiController]
 public class VideoController : ControllerBase
 {
     private readonly string _segmentFolder;
@@ -21,7 +23,7 @@ public class VideoController : ControllerBase
         _movieRepository = movieRepository;
     }
     
-    [HttpGet("/v1/download/{videoName}")]
+    [HttpGet("/download/{videoName}")]
     public IActionResult Video(string videoName)
     {
         var exists = _storage.GetFilePath(videoName);
@@ -34,7 +36,7 @@ public class VideoController : ControllerBase
         
     }
     
-    [HttpGet("/v1/stream/segmented")]
+    [HttpGet("/stream/segmented")]
     public async Task<IActionResult> GetSegmentedVideo(VideoStreamRequest request)
     {
         var movie = await _movieRepository.GetMovieById(request.MovieId);
@@ -42,10 +44,7 @@ public class VideoController : ControllerBase
         {
             return StatusCode(500);
         }
-
-  
         
-
         // Determine the next segment to serve.
         var nextSegment = request.LastSegment + 1;
 
@@ -72,7 +71,7 @@ public class VideoController : ControllerBase
     }
 
     [HttpPost]
-    [Route("/v1/upload-chunk")]
+    [Route("/upload-chunk")]
     public async Task<IActionResult> UploadChunk()
     {
         try
@@ -127,7 +126,7 @@ public class VideoController : ControllerBase
         // you have received the complete file, and you can do further processing.
     }
     
-    [HttpPost("/v1/stream/initial_chunk")]
+    [HttpPost("/stream/initial_chunk")]
     public async Task<IActionResult> GetInitialChunk([FromBody] StreamRequest fileRequest)
     {
         var movie = await _movieRepository.GetMovieById(fileRequest.FileId);
