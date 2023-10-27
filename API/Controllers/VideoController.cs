@@ -23,51 +23,33 @@ public class VideoController : ControllerBase
         _movieRepository = movieRepository;
     }
     
-    [HttpGet("/v1/video/download/{videoName}")]
-    public IActionResult Video(string videoName)
+   
+    
+    [HttpGet]
+    [Route("stream/{movieId}")]
+    public IActionResult StreamVideo(string path)
     {
-        if (!System.IO.File.Exists(videoName)) return StatusCode(404);
- 
+
+        if (!System.IO.File.Exists(path))
+        {
+            return NotFound();
+        }
+
+        var videoFileStream = System.IO.File.OpenRead(path);
+
+        // Set the content type based on the video format.
+        var contentType = "video/mp4"; // Adjust based on your video format.
 
         // Set the response headers.
-        Response.Headers.Add("Content-Type", "video/mp4");
-        Response.Headers.Add("Content-Disposition", $"inline; filename={videoName}");
-        
-        // Serve the next segment.
-        return PhysicalFile(videoName, "video/mp4");        
+        Response.Headers.Add("Content-Type", contentType);
+        Response.Headers.Add("Content-Disposition", $"inline; filename=sample{_storage.GetFileExtension(path)}");
+
+        return File(videoFileStream, contentType);
     }
     
-    [HttpGet("/v1/video/stream/segmented/{request}")]
-    public async Task<IActionResult> GetSegmentedVideo(VideoStreamRequest request)
-    {
-        var movie = await _movieRepository.GetMovieById(request.MovieId);
-        if (movie == null)
-        {
-            return StatusCode(500);
-        }
-        
-        // Determine the next segment to serve.
-        var nextSegment = request.LastSegment + 1;
-
-        // Calculate the segment duration, e.g., 10 seconds per segment.
-        var segmentDuration = 10;
-
-        // Determine the segment range.
-        var nextSegmentFrom = nextSegment * segmentDuration;
-        var nextSegmentTo = (nextSegment + 1) * segmentDuration;
-
-        // Use your existing GetChunk method to get the next segment.
-        var chunk = _ffmpegService.GetChunk(nextSegmentFrom, nextSegmentTo, movie.Path, movie.Name);
-
-        if (string.IsNullOrEmpty(chunk)) return BadRequest("No more segments available.");
-        // Update the last segment.
-        request.LastSegment = nextSegment;
-        
+    
    
-        // Serve the next segment.
-        return chunk == string.Empty ? StatusCode(500) : Ok(chunk);
-    }
-
+    
     [HttpPost]
     [Route("/v1/video/upload-chunk")]
     public async Task<IActionResult> UploadChunk()
@@ -116,6 +98,8 @@ public class VideoController : ControllerBase
         using var fileStream = new FileStream("uploaded_file.zip", FileMode.Append);
         chunkStream.CopyTo(fileStream);
 
+        
+        
         if (endByte == totalSize - 1)
         {
             

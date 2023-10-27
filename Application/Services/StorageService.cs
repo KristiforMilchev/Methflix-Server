@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection.PortableExecutable;
 using Infrastructure.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -30,5 +31,19 @@ public class StorageService : IStorageService
     public string GetFileExtension(string movie)
     {
         return Path.GetExtension(movie);
+    }
+
+    public string LoadBytes(string filePath)
+    {
+        try
+        {
+            var result =  File.ReadAllBytes(filePath);
+            return Convert.ToBase64String(result);
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine("An error occurred: " + ex.Message);
+            return string.Empty;
+        }
     }
 }
