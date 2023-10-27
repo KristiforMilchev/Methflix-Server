@@ -28,4 +28,11 @@ public class MoviesController : ControllerBase
         var result = await _movieRepository.GetCategoryWithMovies();
         return Ok(result);
     }
+
+    [HttpGet("get-movie{id}")]
+    public async Task<IActionResult> GetMovieById(int id)
+    {
+        var movie = await _movieRepository.GetMovieById(id);
+        return movie == null ? StatusCode(500) : Ok(movie);
+    }
 }

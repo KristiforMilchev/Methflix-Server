@@ -10,7 +10,7 @@ namespace Application.Services;
 
 public class FfmpegService : IFfmpegService
 {
-    private readonly IStorageService _storage;
+     private readonly IStorageService _storage;
     private readonly string _moviesFolder;
     private readonly string _streamingFolder;
     public FfmpegService(IStorageService storageService, IConfiguration configuration)
@@ -24,16 +24,21 @@ public class FfmpegService : IFfmpegService
     {
         var movie = _storage.GetFileName(file);
         var extension = _storage.GetFileExtension(file);
-        // Validate and adjust the startTime and duration as needed.
-        if (start < 0) start = 0;
-        if (end <= 0) end = 10; // Default duration in seconds.
+    
         if (!Directory.Exists($"{_streamingFolder}/{name}"))
+        {
             Directory.CreateDirectory($"{_streamingFolder}/{name}");
-
-        if (File.Exists($"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}"))
-            return $"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}";
+        }
+    
         
         var outputSegmentPath = $"{_streamingFolder}/{name}/segment_{name}_{start}_{end}{extension}";
+    
+        if (File.Exists(outputSegmentPath))
+        {
+            // The segment already exists; return it.
+            return outputSegmentPath;
+        }
+
         var startInfo = new ProcessStartInfo
         {
             FileName = "ffmpeg",
@@ -47,6 +52,7 @@ public class FfmpegService : IFfmpegService
         process.StartInfo = startInfo;
         process.Start();
         process.WaitForExit();
+ 
         return outputSegmentPath;
     }
 
