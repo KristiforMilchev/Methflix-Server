@@ -23,20 +23,21 @@ public class VideoController : ControllerBase
         _movieRepository = movieRepository;
     }
     
-    [HttpGet("/download/{videoName}")]
+    [HttpGet("/v1/video/download/{videoName}")]
     public IActionResult Video(string videoName)
     {
-        var exists = _storage.GetFilePath(videoName);
-        
-        if (!System.IO.File.Exists(exists)) return StatusCode(404);
+        if (!System.IO.File.Exists(videoName)) return StatusCode(404);
+ 
 
-        var stream = System.IO.File.OpenRead(exists);
-
-        return File(stream, "video/mp4");
+        // Set the response headers.
+        Response.Headers.Add("Content-Type", "video/mp4");
+        Response.Headers.Add("Content-Disposition", $"inline; filename={videoName}");
         
+        // Serve the next segment.
+        return PhysicalFile(videoName, "video/mp4");        
     }
     
-    [HttpGet("/stream/segmented")]
+    [HttpGet("/v1/video/stream/segmented/{request}")]
     public async Task<IActionResult> GetSegmentedVideo(VideoStreamRequest request)
     {
         var movie = await _movieRepository.GetMovieById(request.MovieId);
@@ -62,16 +63,13 @@ public class VideoController : ControllerBase
         // Update the last segment.
         request.LastSegment = nextSegment;
         
-        // Set the response headers.
-        Response.Headers.Add("Content-Type", "video/mp4");
-        Response.Headers.Add("Content-Disposition", $"inline; filename={chunk}");
-        
+   
         // Serve the next segment.
-        return PhysicalFile(chunk, "video/mp4");
+        return chunk == string.Empty ? StatusCode(500) : Ok(chunk);
     }
 
     [HttpPost]
-    [Route("/upload-chunk")]
+    [Route("/v1/video/upload-chunk")]
     public async Task<IActionResult> UploadChunk()
     {
         try
@@ -126,7 +124,7 @@ public class VideoController : ControllerBase
         // you have received the complete file, and you can do further processing.
     }
     
-    [HttpPost("/stream/initial_chunk")]
+    [HttpPost("/v1/video/stream/initial_chunk")]
     public async Task<IActionResult> GetInitialChunk([FromBody] StreamRequest fileRequest)
     {
         var movie = await _movieRepository.GetMovieById(fileRequest.FileId);

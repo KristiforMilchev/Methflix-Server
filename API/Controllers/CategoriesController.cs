@@ -16,35 +16,35 @@ public class CategoriesController : ControllerBase
         _categoryRepository = repository;
     }
     
-    [HttpGet("/get-all")]
+    [HttpGet("/v1/categories/get-all")]
     public async Task<IActionResult> GetAllCategories()
     {
         var categories = await _categoryRepository.GetCategories();
         return Ok(categories);
     }
 
-    [HttpGet("/get-category/{id}")]
+    [HttpGet("/v1/categories/get-category/{id}")]
     public async Task<IActionResult> GetCategory(int id)
     {
         var category = await _categoryRepository.GetCategory(id);
         return category == null ? StatusCode(500) : Ok(category);
     }
 
-    [HttpPost("/update/{category}")]
+    [HttpPost("/v1/categories/update/{category}")]
     public async Task<IActionResult> UpdateCategory([FromBody] Category category)
     {
         var result = await _categoryRepository.UpdateCategory(category);
         return result ? Ok() : StatusCode(500);
     }
 
-    [HttpPost("/add/{category}")]
+    [HttpPost("/v1/categories/add/{category}")]
     public async Task<IActionResult> AddCategory([FromBody] Category category)
     {
         var result = await _categoryRepository.AddCategory(category);
         return result ? Ok() : StatusCode(500);
     }
 
-    [HttpPost("/delete/{category}")]
+    [HttpPost("/v1/categories/delete/{category}")]
     public async Task<IActionResult> DeleteCategory([FromBody] int category)
     {
         var result = await _categoryRepository.RemoveCategory(category);
