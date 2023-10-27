@@ -27,6 +27,7 @@ builder.Services.AddTransient<IStorageService, StorageService>();
 //Repositories
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<ITorrentRepository, TorrentRepository>();
+builder.Services.AddTransient<ICategoryRepository, CategoryRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

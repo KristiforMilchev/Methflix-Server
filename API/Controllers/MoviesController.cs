@@ -15,14 +15,14 @@ public class MoviesController : ControllerBase
         _movieRepository = repository;
     }
     
-    [HttpGet("/get-category-movies/{id}")]
+    [HttpGet("/v1/movies/get-category-movies/{id}")]
     public async Task<IActionResult> GetCategoryMovies(int id)
     {
         var result = await _movieRepository.GetCategoryMovies(id);
         return result == null ? StatusCode(500) : Ok(result);
     }
 
-    [HttpGet("/get-categories-movies")]
+    [HttpGet("/v1/movies/get-categories-movies")]
     public async Task<IActionResult> GetCategoriesMovies()
     {
         var result = await _movieRepository.GetCategoryWithMovies();
