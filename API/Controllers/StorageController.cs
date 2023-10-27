@@ -8,7 +8,8 @@ using MonoTorrent.Client;
 
 namespace API.Controllers;
 
-[Controller]
+[Route("/api/v1/[controller]")]
+[ApiController]
 public class StorageController : ControllerBase
 {
     private readonly ITorrentService _torrentService;
@@ -20,7 +21,7 @@ public class StorageController : ControllerBase
         _torrentRepository = torrentRepository;
     }
     
-    [HttpGet("/v1/get-torrents")]
+    [HttpGet("/get-torrents")]
     public IActionResult GetTorrents()
     {
         var torrents = _torrentService.GetAllTorrents();
@@ -29,7 +30,7 @@ public class StorageController : ControllerBase
         return Ok(torrents);
     }
 
-    [HttpGet("/v1/get-torrent/{name}")]
+    [HttpGet("/get-torrent/{name}")]
     public IActionResult GetTorrent(string name)
     {
         var torrent = _torrentService.GetTorrentData(name);
@@ -38,7 +39,7 @@ public class StorageController : ControllerBase
         return Ok(torrent);
     }
 
-    [HttpPost("/v1/schedule-torrent")]
+    [HttpPost("/schedule-torrent")]
     public async Task<IActionResult> ScheduleTorrent([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var uri = new Uri(request.Url);
@@ -62,28 +63,28 @@ public class StorageController : ControllerBase
         Notifier.Dispose(torrent.Name);
     }
 
-    [HttpPost("/v1/upload-torrent-file")]
+    [HttpPost("/upload-torrent-file")]
     public async Task<IActionResult> ScheduleTorrentFile([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var startDownloadFromFile = await _torrentService.StartDownloadFromFile(request.File);
         return !startDownloadFromFile ? StatusCode(500) : Ok();
     }
     
-    [HttpPost("/v1/stop-torrent-download")]
+    [HttpPost("/stop-torrent-download")]
     public async Task<IActionResult> StopTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var pauseDownload = await _torrentService.PauseDownload(request.Name);
         return !pauseDownload ? StatusCode(500) : Ok();
     }
 
-    [HttpPost("/v1/resume-torrent-download")]
+    [HttpPost("/resume-torrent-download")]
     public async Task<IActionResult> ResumeTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var resumeDownload = await _torrentService.ResumeDownload(request.Name);
         return !resumeDownload ? StatusCode(500) : Ok();
     }
 
-    [HttpPost("/v1/cancel-torrent-download")]
+    [HttpPost("/cancel-torrent-download")]
     public async Task<IActionResult> CancelTorrentDownload([FromForm] ScheduleTorrentDownloadRequest request)
     {
         var cancelDownload = await _torrentService.CancelDownload(request.Name);
