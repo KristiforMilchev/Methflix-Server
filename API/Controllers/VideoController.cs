@@ -51,9 +51,6 @@ public class VideoController : ControllerBase
         return File(videoFileStream, contentType);
     }
     
-    
-   
-    
     [HttpPost]
     [Route("/v1/video/upload-chunk")]
     public async Task<IActionResult> UploadChunk()

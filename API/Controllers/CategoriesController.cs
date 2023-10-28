@@ -1,3 +1,4 @@
+using Domain.Dtos;
 using Domain.Models;
 using FFmpeg.AutoGen;
 using Infrastructure.Repositories;
@@ -20,14 +21,24 @@ public class CategoriesController : ControllerBase
     public async Task<IActionResult> GetAllCategories()
     {
         var categories = await _categoryRepository.GetCategories();
-        return Ok(categories);
+        return Ok(categories.Select(x=> new CategoryResponseDto
+        {
+            Id = x.Id,
+            Movies = new List<MovieResponseDto>(),
+            Name = x.Name
+        }).ToList());
     }
 
     [HttpGet("/v1/categories/get-category/{id}")]
     public async Task<IActionResult> GetCategory(int id)
     {
         var category = await _categoryRepository.GetCategory(id);
-        return category == null ? StatusCode(500) : Ok(category);
+        return category == null ? StatusCode(500) : Ok(new CategoryResponseDto
+        {
+            Id = category.Id,
+            Movies = new List<MovieResponseDto>(),
+            Name = category.Name
+        });
     }
 
     [HttpPost("/v1/categories/update/{category}")]
