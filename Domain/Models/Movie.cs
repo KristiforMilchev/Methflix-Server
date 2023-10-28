@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace Domain.Models;
 
@@ -13,8 +12,7 @@ public partial class Movie
     public TimeSpan TimeData { get; set; }
 
     public string Path { get; set; } = null!;
-    
-    public string? Thumbnail { get; set; }
+
     public int CategoryId { get; set; }
 
     public int? TorrentId { get; set; }
@@ -23,6 +21,10 @@ public partial class Movie
 
     public int? Extension { get; set; }
 
+    public string? Thumbnail { get; set; }
+
+    public int? TvShowId { get; set; }
+
     public virtual Category Category { get; set; } = null!;
 
     public virtual Upload? Download { get; set; }
@@ -30,4 +32,6 @@ public partial class Movie
     public virtual FileExtension? ExtensionNavigation { get; set; }
 
     public virtual Dtorrent? Torrent { get; set; }
+
+    public virtual TvShow? TvShow { get; set; }
 }
