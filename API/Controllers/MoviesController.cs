@@ -37,7 +37,7 @@ public class MoviesController : ControllerBase
                             Name = y.Name,
                             Id = y.Id,
                             Lenght = y.TimeData,
-                            Thumbnail = ""
+                            Thumbnail = y.Thumbnail ?? string.Empty
                         }
                     ).ToList(),
                     Name = x.Name
@@ -55,7 +55,22 @@ public class MoviesController : ControllerBase
             Id = movie.Id,
             Name = movie.Name,
             Lenght = movie.TimeData,
-            Thumbnail = ""
+            Thumbnail = movie.Thumbnail ?? string.Empty
         });
+    }
+
+    [HttpPost("Upload-Movie-Thumbail")]
+    public async Task<IActionResult> UploadMovieThumnail([FromForm] UploadMovieThumbnail responseDto)
+    {
+        var movie = await _movieRepository.GetMovieById(responseDto.Id);
+        if (movie == null) return StatusCode(500);
+        
+        using var memoryStream = new MemoryStream();
+        await responseDto.File.CopyToAsync(memoryStream); 
+        var data = memoryStream.ToArray();
+        movie.Thumbnail = Convert.ToBase64String(data);
+        var result = await _movieRepository.UpdateMovie(movie);
+
+        return result ? StatusCode(500) : Ok();
     }
 }

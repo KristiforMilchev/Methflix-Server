@@ -25,8 +25,6 @@ public class VideoController : ControllerBase
         _cdnService = cdnService;
     }
     
-   
-    
     [HttpGet]
     [Route("stream/{video}")]
     public async Task<IActionResult> StreamVideo(int video)
@@ -45,6 +43,7 @@ public class VideoController : ControllerBase
         const string contentType = "video/mp4"; // Adjust based on your video format.
 
         // Set the response headers.
+        Response.Headers.Add("Accept-Ranges", "bytes");
         Response.Headers.Add("Content-Type", contentType);
         Response.Headers.Add("Content-Disposition", $"inline; filename=sample{_storage.GetFileExtension(path)}");
 
