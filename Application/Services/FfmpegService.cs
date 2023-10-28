@@ -113,4 +113,40 @@ public class FfmpegService : IFfmpegService
 
         return videoDuration;
     }
+    
+    public async Task<byte[]> GenerateThumbnailAsync(string videoFilePath, TimeSpan timestamp)
+    {
+        // Ensure the video file exists
+        if (!File.Exists(videoFilePath))
+        {
+            throw new FileNotFoundException("Video file not found.", videoFilePath);
+        }
+
+        try
+        {
+            // Build the FFmpeg command
+            var ffmpegPath = "ffmpeg"; // Adjust to your FFmpeg installation path
+            var command = $@"-ss {timestamp.TotalSeconds} -i ""{videoFilePath}"" -vframes 1 -f image2 -";
+
+            using var process = new Process();
+            process.StartInfo.FileName = ffmpegPath;
+            process.StartInfo.Arguments = command;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            process.Start();
+
+            // Read the generated thumbnail image directly from the process's standard output
+            using var thumbnailStream = new MemoryStream();
+            await process.StandardOutput.BaseStream.CopyToAsync(thumbnailStream);
+            return thumbnailStream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions
+            Console.WriteLine(ex.Message);
+            return null;
+        }
+    }
 }

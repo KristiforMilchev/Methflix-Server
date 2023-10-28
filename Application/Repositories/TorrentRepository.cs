@@ -92,7 +92,8 @@ public class TorrentRepository : ITorrentRepository
 
         var exists = await _context.Movies.FirstOrDefaultAsync(x => x.Name == torrent.Name);
         if (exists != null) return false;
-        
+
+        var thumbnail = await _ffmpegService.GenerateThumbnailAsync(filePath, TimeSpan.FromMinutes(10));
         _context.Movies.Add(
             new Movie
             {
@@ -101,7 +102,8 @@ public class TorrentRepository : ITorrentRepository
                 Name = torrent.Name,
                 Path = filePath,
                 TimeData = lenght,
-                TorrentId = torrent.Id 
+                TorrentId = torrent.Id,
+                Thumbnail = Convert.ToBase64String(thumbnail)
             }
         );
         

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Domain.Models;
 
@@ -12,7 +13,8 @@ public partial class Movie
     public TimeSpan TimeData { get; set; }
 
     public string Path { get; set; } = null!;
-
+    
+    public string? Thumbnail { get; set; }
     public int CategoryId { get; set; }
 
     public int? TorrentId { get; set; }
