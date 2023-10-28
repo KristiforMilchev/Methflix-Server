@@ -27,5 +27,7 @@ public partial class Account
 
     public virtual AccessRole Role { get; set; } = null!;
 
+    public virtual ICollection<TvShow> TvShows { get; set; } = new List<TvShow>();
+
     public virtual ICollection<Upload> Uploads { get; set; } = new List<Upload>();
 }

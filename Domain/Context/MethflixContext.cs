@@ -1,7 +1,8 @@
-﻿using Domain.Models;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace Domain.Context;
+namespace Domain.Models;
 
 public partial class MethflixContext : DbContext
 {
@@ -27,6 +28,8 @@ public partial class MethflixContext : DbContext
     public virtual DbSet<FileExtension> FileExtensions { get; set; }
 
     public virtual DbSet<Movie> Movies { get; set; }
+
+    public virtual DbSet<TvShow> TvShows { get; set; }
 
     public virtual DbSet<Upload> Uploads { get; set; }
     
@@ -107,6 +110,21 @@ public partial class MethflixContext : DbContext
             entity.HasOne(d => d.Torrent).WithMany(p => p.Movies)
                 .HasForeignKey(d => d.TorrentId)
                 .HasConstraintName("Movies_DTorrents_Id_fk");
+
+            entity.HasOne(d => d.TvShow).WithMany(p => p.Movies)
+                .HasForeignKey(d => d.TvShowId)
+                .HasConstraintName("Movies_TvShows_Id_fk");
+        });
+
+        modelBuilder.Entity<TvShow>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("TvShows_pk");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TvShows)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("TvShows_Accounts_Id_fk");
         });
 
         modelBuilder.Entity<Upload>(entity =>
