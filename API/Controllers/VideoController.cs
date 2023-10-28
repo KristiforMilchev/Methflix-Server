@@ -14,22 +14,26 @@ public class VideoController : ControllerBase
     private readonly IFfmpegService _ffmpegService;
     private readonly IStorageService _storage;
     private readonly IMovieRepository _movieRepository;
+    private readonly ICdnService _cdnService;
     public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService,
-        IMovieRepository movieRepository)
+        IMovieRepository movieRepository, ICdnService cdnService)
     {
         _segmentFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
         _ffmpegService = ffmpegService;
         _storage = storageService;
         _movieRepository = movieRepository;
+        _cdnService = cdnService;
     }
     
    
     
     [HttpGet]
-    [Route("stream/{movieId}")]
-    public IActionResult StreamVideo(string path)
+    [Route("stream/{video}")]
+    public async Task<IActionResult> StreamVideo(int video)
     {
-
+        var cdnPath =  _cdnService.PathExists(video);
+        var path = cdnPath != null ? cdnPath.Path : await _cdnService.Add(video);
+        
         if (!System.IO.File.Exists(path))
         {
             return NotFound();
@@ -38,7 +42,7 @@ public class VideoController : ControllerBase
         var videoFileStream = System.IO.File.OpenRead(path);
 
         // Set the content type based on the video format.
-        var contentType = "video/mp4"; // Adjust based on your video format.
+        const string contentType = "video/mp4"; // Adjust based on your video format.
 
         // Set the response headers.
         Response.Headers.Add("Content-Type", contentType);
