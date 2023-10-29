@@ -1,4 +1,5 @@
 using Domain.Context;
+using Domain.Dtos;
 using Domain.Models;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,35 @@ public class MovieRepository : IMovieRepository
                                                 .Where(x => x.Movies.Any(y => y.CategoryId == id)).
                                                 ToListAsync();
     }
+
+    public async Task<TvShowSeasonDto> GetTvShowEpisodesById(int id)
+    {
+        var tvShow = await _context.AssociatedSeasonEpisodes.Include(x=>x.Movie)
+                                                                                    .Where(x=>x.TvShowId == id)
+                                                                                    .ToListAsync();
+        var tvShowSeasonData = new TvShowSeasonDto();
+        var showName = await _context.TvShows.FirstOrDefaultAsync(x => x.Id == id);
+        if (showName == null) return new TvShowSeasonDto();
+        
+        tvShowSeasonData.Name = showName!.Name!;
+        foreach (var associatedSeasonEpisodes in tvShow.GroupBy(x => x.Season))
+        {
+            var season = associatedSeasonEpisodes.Key;
+            var movies = new SeasonData
+            {
+                Season = season ?? 0,
+                Movies = associatedSeasonEpisodes.Select(y=> new SeasonMovie
+                {
+                    Id = y.Movie!.Id,
+                    Name = y.Movie.Name
+                }).ToList()
+            };
+            tvShowSeasonData.Seasons.Add(movies);
+        }
+
+        return tvShowSeasonData;
+    }
+    
 
     public async Task<Movie?> GetMovieById(int id)
     {

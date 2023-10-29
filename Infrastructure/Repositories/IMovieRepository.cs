@@ -1,3 +1,4 @@
+using Domain.Dtos;
 using Domain.Models;
 
 namespace Infrastructure.Repositories;
@@ -10,4 +11,5 @@ public interface IMovieRepository
     public Task<List<Category>> GetCategoryWithMovies();
     public Task<bool> UpdateMovie(Movie movie);
     Task<List<TvShow>> GetCategoryTvShows(int id);
+    Task<TvShowSeasonDto> GetTvShowEpisodesById(int id);
 }

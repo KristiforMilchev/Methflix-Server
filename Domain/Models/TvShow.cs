@@ -15,6 +15,8 @@ public partial class TvShow
 
     public string? CreatedAt { get; set; }
 
+    public virtual ICollection<AssociatedSeasonEpisode> AssociatedSeasonEpisodes { get; set; } = new List<AssociatedSeasonEpisode>();
+
     public virtual Account? CreatedByNavigation { get; set; }
 
     public virtual ICollection<Movie> Movies { get; set; } = new List<Movie>();
