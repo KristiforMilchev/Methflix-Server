@@ -44,6 +44,7 @@ public class MoviesController : ControllerBase
                     Name = x.Name,
                     TvShows = _movieRepository.GetCategoryTvShows(x.Id).ConfigureAwait(true).GetAwaiter().GetResult().Select(z=> new TvShowDto
                     {
+                        Id  = z.Id,
                         Name = z.Name,
                         Thumbnail = "",
                         Seasons = z.Season ?? 1,
