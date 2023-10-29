@@ -26,7 +26,9 @@ public class MovieRepository : IMovieRepository
 
     public async Task<List<Category>> GetCategoryWithMovies()
     {
-        return await _context.Categories.Include(x => x.Movies).ToListAsync();
+        return await _context.Categories.Include(x => x.Movies)
+                                        .Where(x=> x.Movies.Any(y=> y.TvShowId == null))
+                                        .ToListAsync();
     }
 
     public async Task<bool> UpdateMovie(Movie movie)
@@ -43,6 +45,14 @@ public class MovieRepository : IMovieRepository
             Console.WriteLine(e);
             return false;
         }
+    }
+
+    public async Task<List<TvShow>> GetCategoryTvShows(int id)
+    {
+
+         return await _context.TvShows.Include(x => x.Movies)
+                                                .Where(x => x.Movies.Any(y => y.CategoryId == id)).
+                                                ToListAsync();
     }
 
     public async Task<Movie?> GetMovieById(int id)
