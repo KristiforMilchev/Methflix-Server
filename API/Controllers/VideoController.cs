@@ -10,11 +10,12 @@ namespace API.Controllers;
 [ApiController]
 public class VideoController : ControllerBase
 {
-    private readonly string _segmentFolder;
-    private readonly IFfmpegService _ffmpegService;
-    private readonly IStorageService _storage;
-    private readonly IMovieRepository _movieRepository;
     private readonly ICdnService _cdnService;
+    private readonly IFfmpegService _ffmpegService;
+    private readonly IMovieRepository _movieRepository;
+    private readonly string _segmentFolder;
+    private readonly IStorageService _storage;
+
     public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService,
         IMovieRepository movieRepository, ICdnService cdnService)
     {
@@ -24,32 +25,51 @@ public class VideoController : ControllerBase
         _movieRepository = movieRepository;
         _cdnService = cdnService;
     }
-    
+
     [HttpGet]
     [Route("stream/{video}")]
     public async Task<IActionResult> StreamVideo(int video)
     {
-        var cdnPath =  _cdnService.PathExists(video);
-        var path = cdnPath != null ? cdnPath.Path : await _cdnService.Add(video);
-        
-        if (!System.IO.File.Exists(path))
+        var cdnPath = await _cdnService.PathExists(video);
+        var path = cdnPath.Path;
+
+        if (!System.IO.File.Exists(path)) return NotFound();
+
+        var ffmpegPath = "ffmpeg"; // Path to the FFmpeg executable
+        var arguments = $"-i \"{path}\" -f mp4 -movflags frag_keyframe+empty_moov pipe:1";
+
+        Response.Headers.Add("Content-Disposition", $"inline; filename={cdnPath.Name}");
+        Response.Headers.Add("Content-Type", "video/mp4");
+
+        var processStartInfo = new ProcessStartInfo(ffmpegPath)
         {
-            return NotFound();
-        }
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true
+        };
 
-        var videoFileStream = System.IO.File.OpenRead(path);
+        var process = new Process { StartInfo = processStartInfo };
 
-        // Set the content type based on the video format.
-        const string contentType = "video/mp4"; // Adjust based on your video format.
+        Response.OnStarting(
+            async () =>
+            {
+                process.Start();
+                var outputStream = process.StandardOutput.BaseStream;
 
-        // Set the response headers.
-        Response.Headers.Add("Accept-Ranges", "bytes");
-        Response.Headers.Add("Content-Type", contentType);
-        Response.Headers.Add("Content-Disposition", $"inline; filename=sample{_storage.GetFileExtension(path)}");
+                await using (outputStream)
+                {
+                    await outputStream.CopyToAsync(Response.Body);
+                    await outputStream.FlushAsync();
+                    await process.WaitForExitAsync();
+                }
+            }
+        );
 
-        return File(videoFileStream, contentType);
+        return new EmptyResult();
     }
-    
+
     [HttpPost]
     [Route("/v1/video/upload-chunk")]
     public async Task<IActionResult> UploadChunk()
@@ -98,16 +118,13 @@ public class VideoController : ControllerBase
         using var fileStream = new FileStream("uploaded_file.zip", FileMode.Append);
         chunkStream.CopyTo(fileStream);
 
-        
-        
         if (endByte == totalSize - 1)
         {
-            
         }
         // When you receive the last chunk (endByte == totalSize - 1), 
         // you have received the complete file, and you can do further processing.
     }
-    
+
     [HttpPost("/v1/video/stream/initial_chunk")]
     public async Task<IActionResult> GetInitialChunk([FromBody] StreamRequest fileRequest)
     {
@@ -123,10 +140,8 @@ public class VideoController : ControllerBase
         var bytesRead = fs.Read(buffer, 0, chunkSize);
 
         if (bytesRead > 0)
-        {
             // Return the length of the file and the first chunk and the time of the movie.
             return Ok(new { FileLength = fileLength, FirstChunk = buffer, MovieLenght = movie.TimeData });
-        }
 
         return BadRequest("Error reading the file.");
     }
