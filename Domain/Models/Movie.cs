@@ -25,6 +25,8 @@ public partial class Movie
 
     public int? TvShowId { get; set; }
 
+    public virtual ICollection<AssociatedSeasonEpisode> AssociatedSeasonEpisodes { get; set; } = new List<AssociatedSeasonEpisode>();
+
     public virtual Category Category { get; set; } = null!;
 
     public virtual Upload? Download { get; set; }

@@ -20,6 +20,8 @@ public partial class MethflixContext : DbContext
 
     public virtual DbSet<Account> Accounts { get; set; }
 
+    public virtual DbSet<AssociatedSeasonEpisode> AssociatedSeasonEpisodes { get; set; }
+
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<Dtorrent> Dtorrents { get; set; }
@@ -31,7 +33,8 @@ public partial class MethflixContext : DbContext
     public virtual DbSet<TvShow> TvShows { get; set; }
 
     public virtual DbSet<Upload> Uploads { get; set; }
-    
+
+ 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AccessKey>(entity =>
@@ -58,6 +61,19 @@ public partial class MethflixContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Accounts_Roles_RoleId_fk");
+        });
+
+        modelBuilder.Entity<AssociatedSeasonEpisode>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("AssociatedSeasonEpisodes_pk");
+
+            entity.HasOne(d => d.Movie).WithMany(p => p.AssociatedSeasonEpisodes)
+                .HasForeignKey(d => d.MovieId)
+                .HasConstraintName("AssociatedSeasonEpisodes_Movies_Id_fk");
+
+            entity.HasOne(d => d.TvShow).WithMany(p => p.AssociatedSeasonEpisodes)
+                .HasForeignKey(d => d.TvShowId)
+                .HasConstraintName("AssociatedSeasonEpisodes_TvShows_Id_fk");
         });
 
         modelBuilder.Entity<Category>(entity =>

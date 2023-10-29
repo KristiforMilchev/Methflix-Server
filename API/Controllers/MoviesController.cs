@@ -29,10 +29,10 @@ public class MoviesController : ControllerBase
         
         return Ok(
             result.Select(
-                async x => new CategoryResponseDto
+                x => new CategoryResponseDto
                 {
                     Id = x.Id,
-                    Movies = x.Movies.Select(
+                    Movies = x.Movies.Where(x=>x.TvShowId == null).Select(
                         y => new MovieResponseDto
                         {
                             Name = y.Name,
@@ -42,12 +42,27 @@ public class MoviesController : ControllerBase
                         }
                     ).ToList(),
                     Name = x.Name,
-                    TvShows = await _movieRepository.GetCategoryTvShows(x.Id)
+                    TvShows = _movieRepository.GetCategoryTvShows(x.Id).ConfigureAwait(true).GetAwaiter().GetResult().Select(z=> new TvShowDto
+                    {
+                        Name = z.Name,
+                        Thumbnail = "",
+                        Seasons = z.Season ?? 1,
+                        MovieCount = z.Movies.Count,
+                    }).ToList()
                 }
             ).ToList()    
         );
     }
 
+    [HttpGet("Tv-Show-Episodes/{id}")]
+    public async Task<IActionResult> TvShowEpisodes(int id)
+    {
+        var episodes = await _movieRepository.GetTvShowEpisodesById(id);
+        if (episodes.Seasons.Count == 0) return StatusCode(500);
+
+        return Ok(episodes);
+    }
+    
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMovieById(int id)
     {
