@@ -26,9 +26,10 @@ public class MoviesController : ControllerBase
     public async Task<IActionResult> GetCategoriesMovies()
     {
         var result = await _movieRepository.GetCategoryWithMovies();
+        
         return Ok(
             result.Select(
-                x => new CategoryResponseDto
+                async x => new CategoryResponseDto
                 {
                     Id = x.Id,
                     Movies = x.Movies.Select(
@@ -40,9 +41,10 @@ public class MoviesController : ControllerBase
                             Thumbnail = y.Thumbnail ?? string.Empty
                         }
                     ).ToList(),
-                    Name = x.Name
+                    Name = x.Name,
+                    TvShows = await _movieRepository.GetCategoryTvShows(x.Id)
                 }
-            ).ToList()
+            ).ToList()    
         );
     }
 

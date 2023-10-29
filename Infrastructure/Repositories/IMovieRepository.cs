@@ -9,4 +9,5 @@ public interface IMovieRepository
     public Task<Movie?> GetMovieById(int id);
     public Task<List<Category>> GetCategoryWithMovies();
     public Task<bool> UpdateMovie(Movie movie);
+    Task<List<TvShow>> GetCategoryTvShows(int id);
 }
