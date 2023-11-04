@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("/api/v1/[controller]")]
+[Route("/API/V1/[controller]")]
 [ApiController]
 public class VideoController : ControllerBase
 {
@@ -27,7 +27,7 @@ public class VideoController : ControllerBase
     }
 
     [HttpGet]
-    [Route("stream/{video}")]
+    [Route("Stream/{video}")]
     public async Task<IActionResult> StreamVideo(int video)
     {
         var cdnPath = await _cdnService.PathExists(video);
@@ -70,7 +70,7 @@ public class VideoController : ControllerBase
     }
 
     [HttpPost]
-    [Route("/v1/video/upload-chunk")]
+    [Route("Video/Upload-Chunk")]
     public async Task<IActionResult> UploadChunk()
     {
         try
@@ -122,26 +122,5 @@ public class VideoController : ControllerBase
         }
         // When you receive the last chunk (endByte == totalSize - 1), 
         // you have received the complete file, and you can do further processing.
-    }
-
-    [HttpPost("/v1/video/stream/initial_chunk")]
-    public async Task<IActionResult> GetInitialChunk([FromBody] StreamRequest fileRequest)
-    {
-        var movie = await _movieRepository.GetMovieById(fileRequest.FileId);
-        if (movie == null) return StatusCode(500);
-        // Read the file length.
-        var fileLength = new FileInfo(movie.Path).Length;
-
-        // Read the first chunk from the file. Adjust the chunk size as needed.
-        const int chunkSize = 1024 * 1024; // 1 MB
-        var buffer = new byte[chunkSize];
-        await using var fs = new FileStream(movie.Path, FileMode.Open, FileAccess.Read);
-        var bytesRead = fs.Read(buffer, 0, chunkSize);
-
-        if (bytesRead > 0)
-            // Return the length of the file and the first chunk and the time of the movie.
-            return Ok(new { FileLength = fileLength, FirstChunk = buffer, MovieLenght = movie.TimeData });
-
-        return BadRequest("Error reading the file.");
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("/API/VI/[controller]")]
+[Route("/API/V1/[controller]")]
 [ApiController]
 public class AuthenticationController : ControllerBase
 {

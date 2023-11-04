@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
-[Route("/api/v1/[controller]")]
+[Route("/API/V1/[controller]")]
 [ApiController]
 public class CategoriesController : ControllerBase
 {
@@ -17,7 +17,7 @@ public class CategoriesController : ControllerBase
         _categoryRepository = repository;
     }
     
-    [HttpGet("/v1/categories/get-all")]
+    [HttpGet("Get-All")]
     public async Task<IActionResult> GetAllCategories()
     {
         var categories = await _categoryRepository.GetCategories();
@@ -29,7 +29,7 @@ public class CategoriesController : ControllerBase
         }).ToList());
     }
 
-    [HttpGet("/v1/categories/get-category/{id}")]
+    [HttpGet("Get-Category/{id}")]
     public async Task<IActionResult> GetCategory(int id)
     {
         var category = await _categoryRepository.GetCategory(id);
@@ -41,21 +41,21 @@ public class CategoriesController : ControllerBase
         });
     }
 
-    [HttpPost("/v1/categories/update/{category}")]
+    [HttpPost("Update/{category}")]
     public async Task<IActionResult> UpdateCategory([FromBody] Category category)
     {
         var result = await _categoryRepository.UpdateCategory(category);
         return result ? Ok() : StatusCode(500);
     }
 
-    [HttpPost("/v1/categories/add/{category}")]
+    [HttpPost("Add/{category}")]
     public async Task<IActionResult> AddCategory([FromBody] Category category)
     {
         var result = await _categoryRepository.AddCategory(category);
         return result ? Ok() : StatusCode(500);
     }
 
-    [HttpPost("/v1/categories/delete/{category}")]
+    [HttpPost("Delete/{category}")]
     public async Task<IActionResult> DeleteCategory([FromBody] int category)
     {
         var result = await _categoryRepository.RemoveCategory(category);
