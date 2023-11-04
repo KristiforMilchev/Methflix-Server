@@ -36,8 +36,7 @@ public class VideoController : ControllerBase
         if (!System.IO.File.Exists(path)) return NotFound();
 
         var ffmpegPath = "ffmpeg"; // Path to the FFmpeg executable
-        var arguments = $"-i \"{path}\" -f mp4 -movflags frag_keyframe+empty_moov pipe:1";
-
+        var arguments = $"-i \"{path}\" -vf \"setsar=1\" -r 30 -f mp4 -movflags frag_keyframe+empty_moov -buffer_size 4096k pipe:1";        
         Response.Headers.Add("Content-Disposition", $"inline; filename={cdnPath.Name}");
         Response.Headers.Add("Content-Type", "video/mp4");
 
