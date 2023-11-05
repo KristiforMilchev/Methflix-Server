@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "PostgradeSQL": "Host=localhost;Port=5432;Database=Methflix;Username=postgres;Password=Hj153426;"
+  }
+}
