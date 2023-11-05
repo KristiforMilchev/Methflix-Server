@@ -14,6 +14,8 @@ IConfiguration configuration = builder.Build();
 var options = new DbContextOptionsBuilder<MethflixContext>().UseNpgsql(configuration.GetConnectionString("PostgreSQL")).
     Options;
 
+Console.WriteLine("Important: Please do not expose this tool online. It is intended for initial setup purposes only!");
+
 args = new[]
 {
     "users"
@@ -27,7 +29,7 @@ var rootCommand = new RootCommand
         "Allows a user to login the system, takes in a the following parameters, --user [name], -key [public address], --device [phone,pc,tv]"
     )
     {
-        Handler = new AuthenticateUserCommandHandler()
+        Handler = new AuthenticateUserCommandHandler(new MethflixContext())
     },
     new RemoveUser("remove", "Removes a user from accessing the api, takes in a public address")
     {
