@@ -5,6 +5,7 @@ using CLI.Commands;
 using Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using QRCoder;
 
 var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()) // Set the path to the JSON file
     .AddJsonFile("settings.json", true, true);
@@ -17,6 +18,7 @@ args = new[]
 {
     "users"
 };
+
 foreach (var s in args) Console.WriteLine(s);
 var rootCommand = new RootCommand
 {
