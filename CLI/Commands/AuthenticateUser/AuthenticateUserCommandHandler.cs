@@ -2,12 +2,22 @@ using System.CommandLine.Invocation;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using QRCoder;
+using Domain.Context;
+using Domain.Dtos;
+using Domain.Models;
+using Newtonsoft.Json;
 
 namespace CLI.Commands;
 
 public class AuthenticateUserCommandHandler :ICommandHandler
 {
+    private readonly MethflixContext _context;
+
+    public AuthenticateUserCommandHandler(MethflixContext context)
+    {
+        _context = context;
+    }
+    
     public int Invoke(InvocationContext context)
     {
         Console.WriteLine("Opening socket at ws://127.0.0.1:9987 waiting for Authentication request.");
@@ -30,7 +40,25 @@ public class AuthenticateUserCommandHandler :ICommandHandler
             var bytesRead = clientSocket.Receive(buffer);
             var response = Encoding.ASCII.GetString(buffer, 0, bytesRead);
             Console.WriteLine("Server response: " + response);
+            var account = JsonConvert.DeserializeObject<RegisterAccountRequest>(response);
+            var acc = _context.Accounts.Add(
+                new Account
+                {
+                    Name = account.Account,
+                    RoleId = 1,
+                }
+            ).Entity;
+            _context.SaveChanges();
 
+            _context.AccessKeys.Add(
+                new AccessKey
+                {
+                    Key = account.PublicKey,
+                    AccountId = acc.Id
+                }
+            );
+            _context.SaveChanges();
+            
             clientSocket.Close();
             break;
         }
