@@ -2,6 +2,7 @@
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using CLI.Commands;
+using CLI.Commands.AddAccount;
 using Domain.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,10 @@ var rootCommand = new RootCommand
     )
     {
         Handler = new UsersCommandHandler()
+    },
+    new AddAcoountCommand("add-account","Adds a new account, if the name exist it will only append the new access key to the authorized account keys.")
+    {
+        Handler = new AddAccountCommandHandler(new MethflixContext())
     }
 };
 
