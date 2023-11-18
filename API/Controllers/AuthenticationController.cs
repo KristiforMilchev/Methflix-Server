@@ -1,6 +1,9 @@
-using System.Security.Cryptography;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Domain.Dtos;
+using Infrastructure.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace API.Controllers;
 
@@ -8,20 +11,20 @@ namespace API.Controllers;
 [ApiController]
 public class AuthenticationController : ControllerBase
 {
-    private readonly List<StoredMessage> storedMessages = new();
+    private readonly IAuthorizationService _authorizationService;
+
+    public AuthenticationController(IAuthorizationService authorizationService)
+    {
+        _authorizationService = authorizationService;
+    }
 
     [HttpGet("Init")]
     public IActionResult InitiateSignIn()
     {
         try
         {
-            var uniqueMessage = Guid.NewGuid().ToString();
-            var storedMessage = new StoredMessage
-            {
-                Message = uniqueMessage
-            };
-            storedMessages.Add(storedMessage);
-
+            var host = Request.Host.Host;
+            var uniqueMessage = _authorizationService.GetMessage(host);
             return Ok(uniqueMessage);
         }
         catch (Exception ex)
@@ -35,29 +38,40 @@ public class AuthenticationController : ControllerBase
     {
         try
         {
-            // Load the public key
-            using var rsa = new RSACryptoServiceProvider();
-            rsa.FromXmlString(request.PublicKey);
-            if (storedMessages.Count == 0)
-                return BadRequest(new { VerificationStatus = "Message not found for verification." });
-
-            var isSignatureValid = false;
-            foreach (var x in storedMessages)
+            var host = Request.Host.Host;
+            var isSignatureValid = _authorizationService.VerifyMessage(request, host);
+            if (!isSignatureValid)
+                return BadRequest(new { VerificationStatus = "Signature is not valid." });
+            
+            var claims = new List<Claim>
             {
-                var messageData = Convert.FromBase64String(x.Message);
-                var signature = Convert.FromBase64String(request.Signature);
-                isSignatureValid = rsa.VerifyData(messageData, new SHA256CryptoServiceProvider(), signature);
-                if (isSignatureValid) break; // Break out of the loop when a valid signature is found
-            }
+                new Claim(ClaimTypes.Name, "TV") 
+            };
 
-            if (isSignatureValid)
-                return Ok(new { VerificationStatus = "Signature is valid." });
-            return BadRequest(new { VerificationStatus = "Signature is not valid." });
+            var bytes = Convert.FromBase64String(request.Signature);
+            var key = new SymmetricSecurityKey(bytes);
+
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: "Methflix",
+                audience: "IOT Device",
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1), // Adjust the expiration time as needed
+                signingCredentials: credentials
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            
+            return Ok(new { Token = tokenString });
         }
         catch (Exception ex)
         {
             return StatusCode(
-                500, new { Message = "An error occurred while verifying the signature.", Error = ex.Message }
+                500, new
+                {
+                    Message = "An error occurred while verifying the signature or token has expired."
+                }
             );
         }
     }

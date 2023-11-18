@@ -8,12 +8,10 @@ namespace API;
 public class Common :IDisposable
 {
     private readonly ITorrentRepository _torrentRepository;
-    private readonly MethflixContext _context;
-    public Common(ITorrentRepository torrentRepository, MethflixContext context)
+    public Common(ITorrentRepository torrentRepository)
     {
         Notifier.Subscribe("on_torrent_downloaded", Downloaded);
         _torrentRepository = torrentRepository;
-        _context = context;
     }
 
     void Downloaded(object manager)

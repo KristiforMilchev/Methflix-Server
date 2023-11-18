@@ -1,13 +1,13 @@
-using Domain.Dtos;
+using Infrastructure.Interfaces;
 using Npgsql;
 
 namespace Application.Repositories;
 
-public class TvShowsRepository
+public class TvShowsRepository : BaseRepository, ITvShowsRepository
 {
     private readonly NpgsqlConnection _connection;
 
-    public TvShowsRepository(NpgsqlConnection connection)
+    public TvShowsRepository(NpgsqlConnection connection): base(connection)
     {
         _connection = connection ?? throw new ArgumentNullException(nameof(connection));
     }
@@ -17,8 +17,7 @@ public class TvShowsRepository
         var result = "";
         var sql = "SELECT \"Name\" FROM \"TvShows\"  WHERE \"Id\" = @TvShowId";
 
-        await using var command = CreateCommand(sql);
-        command.Parameters.AddWithValue("@TvShowId", id);
+        await using var command = CreateCommand(sql, new NpgsqlParameter("@TvShowId", id));
         await using var reader = await command.ExecuteReaderAsync();
         
         while (await reader.ReadAsync())
@@ -29,9 +28,6 @@ public class TvShowsRepository
         return result;
     }
     
-    private NpgsqlCommand CreateCommand(string query)
-    {
-        return new NpgsqlCommand(query, _connection);
-    }
+    
 
 }
