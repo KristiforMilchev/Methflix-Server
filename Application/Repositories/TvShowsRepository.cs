@@ -15,7 +15,8 @@ public class TvShowsRepository : BaseRepository, ITvShowsRepository
     public async Task<string> TvShowName(int id)
     {
         var result = "";
-        var sql = "SELECT \"Name\" FROM \"TvShows\"  WHERE \"Id\" = @TvShowId";
+        var sql = """SELECT "Name" FROM "TvShows"  WHERE "Id" = @TvShowId""";
+        await _connection.OpenAsync();
 
         await using var command = CreateCommand(sql, new NpgsqlParameter("@TvShowId", id));
         await using var reader = await command.ExecuteReaderAsync();
@@ -27,7 +28,4 @@ public class TvShowsRepository : BaseRepository, ITvShowsRepository
 
         return result;
     }
-    
-    
-
 }

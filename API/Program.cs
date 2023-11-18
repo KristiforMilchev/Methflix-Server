@@ -10,7 +10,7 @@ IConfiguration configuration = builder.Configuration;
 // Add services to the container.
  
 builder.Services.AddControllers();
-builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(configuration.GetConnectionString("YourConnectionString")));
+builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(configuration.GetConnectionString("PostgradeSQL")));
 
 //Injecting shared dependencies
 var notifier = new TorrentNotifier();

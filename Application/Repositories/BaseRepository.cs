@@ -9,7 +9,7 @@ public class BaseRepository
     protected BaseRepository(NpgsqlConnection connection)
     {
         _connection = connection;
-    }
+     }
     
     protected NpgsqlCommand CreateCommand(string sql, params NpgsqlParameter[] parameters)
     {

@@ -34,6 +34,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
                            IsDeleted)
                            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @Location, @IsDeleted)
                            """;
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -53,11 +54,14 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
     public async Task UpdateTorrentDownloadComplete(TorrentManager torrentManager, int category = 1)
     {
         var sql =
-            "INSERT INTO \"DTorrents\" (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, RequestedBy) " +
-            "VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @RequestedBy) " +
-            "ON CONFLICT (Name) DO UPDATE " +
-            "SET IsDownloaded = EXCLUDED.IsDownloaded";
-
+            """
+            INSERT INTO "DTorrents" (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, RequestedBy)
+            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @RequestedBy)
+            ON CONFLICT (Name) DO UPDATE
+            SET IsDownloaded = EXCLUDED.IsDownloaded
+            """;
+        await _connection.OpenAsync();
+     
         var parameters = new NpgsqlParameter[]
         {
             new NpgsqlParameter("@Name", torrentManager.Name),
@@ -86,10 +90,11 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
         var length = _ffmpegService.GetMovieLenght(filePath);
 
         const string sql = """
-                           INSERT INTO Movies (CategoryId, Name, Path, TimeData, TorrentId, Thumbnail) 
+                           INSERT INTO "Movies" (CategoryId, Name, Path, TimeData, TorrentId, Thumbnail) 
                            VALUES (@CategoryId, @Name, @Path, @TimeData, @TorrentId, @Thumbnail)
                            """;
 
+        await _connection.OpenAsync();
 
         var thumbnail = Convert.ToBase64String(
             await _ffmpegService.GenerateThumbnailAsync(filePath, TimeSpan.FromMinutes(10))
@@ -110,10 +115,9 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
 
     private async Task<int> GetTorrentIdByName(string name)
     {
-        var sql = "SELECT Id FROM \"DTorrents\" WHERE Name = @Name";
-
+        var sql = """SELECT Id FROM "DTorrents" WHERE Name = @Name""";
+        await _connection.OpenAsync();
         
-
         await using var command = CreateCommand(sql,new NpgsqlParameter("@Name", name));
         var result = await command.ExecuteScalarAsync();
 
@@ -122,7 +126,8 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
 
     public async Task<bool> DeleteTorrent(int id)
     {
-        var sql = "DELETE FROM \"DTorrents\" WHERE Id = @Id";
+        var sql = """DELETE FROM "DTorrents" WHERE Id = @Id""";
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {

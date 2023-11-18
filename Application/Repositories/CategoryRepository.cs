@@ -1,25 +1,26 @@
+using System.Runtime.CompilerServices;
 using Domain.Models;
 using Infrastructure.Repositories;
 using Npgsql;
 
 namespace Application.Repositories;
 
-public class CategoryRepository : BaseRepository, ICategoryRepository
+public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposable
 {
     private readonly IMovieRepository _movieRepository;
     public CategoryRepository(NpgsqlConnection connection, IMovieRepository movieRepository) : base(connection)
     {
-        _movieRepository = movieRepository;
+        _movieRepository = movieRepository; 
     }
 
     public async Task<Category?> GetCategory(int id)
     {
         var sql = "SELECT * FROM Categories WHERE Id = @Id";
+        await _connection.OpenAsync();
 
         await using var command = CreateCommand(sql, new NpgsqlParameter("@Id", id));
-
+        
         await using var reader = await command.ExecuteReaderAsync();
-
         if (await reader.ReadAsync())
         {
             return new Category
@@ -40,7 +41,8 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
     public async Task<List<Category>> GetCategories()
     {
         var categories = new List<Category>();
-        var sql = "SELECT * FROM Categories";
+        var sql = """SELECT * FROM "Category" """;
+        await _connection.OpenAsync();
 
         await using var command = CreateCommand(sql);
 
@@ -65,7 +67,11 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
 
     public async Task<bool> UpdateCategory(Category category)
     {
-        var sql = "UPDATE Categories SET Name = @Name, CreatedBy = @CreatedBy, CreatedAt = @CreatedAt, UpdatedBy = @UpdatedBy, UpdatedAt = @UpdatedAt, IsDeleted = @IsDeleted WHERE Id = @Id";
+        var sql = """
+                  UPDATE "Category" SET Name = @Name, CreatedBy = @CreatedBy, CreatedAt = @CreatedAt, UpdatedBy =
+                  @UpdatedBy, UpdatedAt = @UpdatedAt, IsDeleted = @IsDeleted WHERE Id = @Id
+                  """;
+        await _connection.OpenAsync();
 
         await using var command = CreateCommand(sql,
             new NpgsqlParameter("@Id", category.Id),
@@ -83,7 +89,11 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
 
     public async Task<bool> AddCategory(Category category)
     {
-        var sql = "INSERT INTO Categories (Name, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, IsDeleted) VALUES (@Name, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt, @IsDeleted)";
+        var sql = """
+                  INSERT INTO "Category" (Name, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, IsDeleted)
+                  VALUES (@Name, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt, @IsDeleted)
+                  """;
+        await _connection.OpenAsync();
 
         await using var command = CreateCommand(sql,
             new NpgsqlParameter("@Name", category.Name),
@@ -102,6 +112,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
     {
         var categoryMovies = await _movieRepository.GetCategoryMovies(id);
         if (categoryMovies == null) return false;
+        await _connection.OpenAsync();
 
         await using var transaction = await _connection.BeginTransactionAsync();
         try
@@ -111,7 +122,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
                 await _movieRepository.UpdateMovie(movie);
             }
 
-            var sqlDelete = "DELETE FROM Categories WHERE Id = @Id";
+            var sqlDelete = """DELETE FROM "Category" WHERE Id = @Id""";
             await using var command = CreateCommand(sqlDelete, new NpgsqlParameter("@Id", id));
 
             await command.ExecuteNonQueryAsync();
@@ -124,5 +135,10 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
             await transaction.RollbackAsync();
             return false;
         }
+    }
+
+    public async void Dispose()
+    {
+       await _connection.CloseAsync();
     }
 }
