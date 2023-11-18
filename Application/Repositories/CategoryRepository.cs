@@ -1,75 +1,128 @@
-using Domain.Context;
 using Domain.Models;
 using Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Application.Repositories;
 
-public class CategoryRepository : ICategoryRepository
+public class CategoryRepository : BaseRepository, ICategoryRepository
 {
-    private readonly MethflixContext _context;
     private readonly IMovieRepository _movieRepository;
-
-    public CategoryRepository(MethflixContext context ,IMovieRepository movieRepository)
+    public CategoryRepository(NpgsqlConnection connection, IMovieRepository movieRepository) : base(connection)
     {
-        _context = context;
         _movieRepository = movieRepository;
     }
-    
+
     public async Task<Category?> GetCategory(int id)
     {
-        return await _context.Categories.FirstOrDefaultAsync(x => x.Id == id);
+        var sql = "SELECT * FROM Categories WHERE Id = @Id";
+
+        await using var command = CreateCommand(sql, new NpgsqlParameter("@Id", id));
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
+        {
+            return new Category
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                Name = reader.GetString(reader.GetOrdinal("Name")),
+                CreatedBy = reader.GetInt32(reader.GetOrdinal("CreatedBy")),
+                CreatedAt = reader.GetString(reader.GetOrdinal("CreatedAt")),
+                UpdatedBy = reader.IsDBNull(reader.GetOrdinal("UpdatedBy")) ? null : reader.GetInt32(reader.GetOrdinal("UpdatedBy")),
+                UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetString(reader.GetOrdinal("UpdatedAt")),
+                IsDeleted = reader.IsDBNull(reader.GetOrdinal("IsDeleted")) ? null : reader.GetInt32(reader.GetOrdinal("IsDeleted"))
+            };
+        }
+
+        return null;
     }
-    
-    
+
     public async Task<List<Category>> GetCategories()
     {
-        return await _context.Categories.ToListAsync();
+        var categories = new List<Category>();
+        var sql = "SELECT * FROM Categories";
+
+        await using var command = CreateCommand(sql);
+
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            categories.Add(new Category
+            {
+                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                Name = reader.GetString(reader.GetOrdinal("Name")),
+                CreatedBy = reader.GetInt32(reader.GetOrdinal("CreatedBy")),
+                CreatedAt = reader.GetString(reader.GetOrdinal("CreatedAt")),
+                UpdatedBy = reader.IsDBNull(reader.GetOrdinal("UpdatedBy")) ? null : reader.GetInt32(reader.GetOrdinal("UpdatedBy")),
+                UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetString(reader.GetOrdinal("UpdatedAt")),
+                IsDeleted = reader.IsDBNull(reader.GetOrdinal("IsDeleted")) ? null : reader.GetInt32(reader.GetOrdinal("IsDeleted"))
+            });
+        }
+
+        return categories;
     }
-    
+
     public async Task<bool> UpdateCategory(Category category)
     {
-        try
-        {
-            _context.Attach(category);
-            _context.Update(category);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            return false;
-        }
+        var sql = "UPDATE Categories SET Name = @Name, CreatedBy = @CreatedBy, CreatedAt = @CreatedAt, UpdatedBy = @UpdatedBy, UpdatedAt = @UpdatedAt, IsDeleted = @IsDeleted WHERE Id = @Id";
+
+        await using var command = CreateCommand(sql,
+            new NpgsqlParameter("@Id", category.Id),
+            new NpgsqlParameter("@Name", category.Name),
+            new NpgsqlParameter("@CreatedBy", category.CreatedBy),
+            new NpgsqlParameter("@CreatedAt", category.CreatedAt),
+            new NpgsqlParameter("@UpdatedBy", category.UpdatedBy ?? (object)DBNull.Value),
+            new NpgsqlParameter("@UpdatedAt", category.UpdatedAt ?? (object)DBNull.Value),
+            new NpgsqlParameter("@IsDeleted", category.IsDeleted ?? (object)DBNull.Value)
+        );
+
+        await command.ExecuteNonQueryAsync();
+        return true;
     }
 
     public async Task<bool> AddCategory(Category category)
     {
-        try
-        {
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        catch (Exception e)
-        {
-            return true;
-        }
+        var sql = "INSERT INTO Categories (Name, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, IsDeleted) VALUES (@Name, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt, @IsDeleted)";
+
+        await using var command = CreateCommand(sql,
+            new NpgsqlParameter("@Name", category.Name),
+            new NpgsqlParameter("@CreatedBy", category.CreatedBy),
+            new NpgsqlParameter("@CreatedAt", category.CreatedAt),
+            new NpgsqlParameter("@UpdatedBy", category.UpdatedBy ?? (object)DBNull.Value),
+            new NpgsqlParameter("@UpdatedAt", category.UpdatedAt ?? (object)DBNull.Value),
+            new NpgsqlParameter("@IsDeleted", category.IsDeleted ?? (object)DBNull.Value)
+        );
+
+        await command.ExecuteNonQueryAsync();
+        return true;
     }
 
     public async Task<bool> RemoveCategory(int id)
     {
         var categoryMovies = await _movieRepository.GetCategoryMovies(id);
         if (categoryMovies == null) return false;
-        
-        foreach (var movie in categoryMovies.Movies)
-        {
-            movie.CategoryId = 1;
-            await _movieRepository.UpdateMovie(movie);
-        }
 
-        var category = await _context.Categories.FirstOrDefaultAsync(x => x.Id == id);
-        _context.Categories.Remove(category!);
-        return true;
+        await using var transaction = await _connection.BeginTransactionAsync();
+        try
+        {
+            foreach (var movie in categoryMovies.Movies)
+            {
+                await _movieRepository.UpdateMovie(movie);
+            }
+
+            var sqlDelete = "DELETE FROM Categories WHERE Id = @Id";
+            await using var command = CreateCommand(sqlDelete, new NpgsqlParameter("@Id", id));
+
+            await command.ExecuteNonQueryAsync();
+
+            await transaction.CommitAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
     }
 }

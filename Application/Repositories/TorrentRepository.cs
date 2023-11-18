@@ -6,22 +6,22 @@ using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MonoTorrent.Client;
+using Npgsql;
 
 namespace Application.Repositories;
 
-public class TorrentRepository : ITorrentRepository
+public class TorrentRepository : BaseRepository, ITorrentRepository
 {
-    private readonly MethflixContext _context;
+
     private readonly string _downloadFolder;
     private readonly string _torrentFolder;
     private readonly IFfmpegService _ffmpegService;
     private readonly IStorageService _storage;
 
-    public TorrentRepository(MethflixContext context, IConfiguration configuration, IFfmpegService ffmpegService,
-        IStorageService storageService)
+    public TorrentRepository(NpgsqlConnection connection, IConfiguration configuration, IFfmpegService ffmpegService,
+        IStorageService storageService) : base(connection)
     {
-        _context = context;
-        _downloadFolder = configuration["StorageManager:Internal"] ?? string.Empty;
+         _downloadFolder = configuration["StorageManager:Internal"] ?? string.Empty;
         _torrentFolder = configuration["StorageManager:TorrentStorage"] ?? string.Empty;
         _ffmpegService = ffmpegService;
         _storage = storageService;
@@ -29,95 +29,109 @@ public class TorrentRepository : ITorrentRepository
 
     public async Task CreateTorrent(string name)
     {
-        var torrent = _context.Dtorrents.FirstOrDefault(x => x.Name == name);
-        if (torrent == null)
+        const string sql = """
+                           INSERT INTO DTorrents (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, Location, 
+                           IsDeleted)
+                           VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @Location, @IsDeleted)
+                           """;
+
+        var parameters = new NpgsqlParameter[]
         {
-            _context.Dtorrents.Add(
-                new Dtorrent
-                {
-                    Name = name,
-                    CreatedAt = DateTime.UtcNow.Ticks.ToString(),
-                    CreatedBy = -1,
-                    IsDownloaded = false,
-                    IsSeeding = true,
-                    Location = $"{_downloadFolder}/{name}",
-                    IsDeleted = false,
-                }
-            );
-            await _context.SaveChangesAsync();
-        }
+            new NpgsqlParameter("@Name", name),
+            new NpgsqlParameter("@CreatedAt", DateTime.UtcNow.Ticks.ToString()),
+            new NpgsqlParameter("@CreatedBy", -1),
+            new NpgsqlParameter("@IsDownloaded", false),
+            new NpgsqlParameter("@IsSeeding", true),
+            new NpgsqlParameter("@Location", $"{_downloadFolder}/{name}"),
+            new NpgsqlParameter("@IsDeleted", false),
+        };
+
+        await using var command = CreateCommand(sql, parameters);
+        await command.ExecuteNonQueryAsync();
     }
 
-    public async Task UpdateTorrentDownloadComplete(TorrentManager  torrentManager, int category = 1)
+    public async Task UpdateTorrentDownloadComplete(TorrentManager torrentManager, int category = 1)
     {
-        var torrent = await _context.Dtorrents.FirstOrDefaultAsync(x => x.Name == torrentManager.Name);
-        if (torrent == null)
+        var sql =
+            "INSERT INTO \"DTorrents\" (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, RequestedBy) " +
+            "VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @RequestedBy) " +
+            "ON CONFLICT (Name) DO UPDATE " +
+            "SET IsDownloaded = EXCLUDED.IsDownloaded";
+
+        var parameters = new NpgsqlParameter[]
         {
-            var res = await _context.Dtorrents.AddAsync(
-                new Dtorrent
-                {
-                    Name = torrentManager.Name,
-                    CreatedAt = DateTime.UtcNow.Ticks.ToString(),
-                    CreatedBy = 1,
-                    IsDownloaded = true,
-                    Location = $"{_torrentFolder}/{torrentManager.Name}.torrent",
-                    IsSeeding = true,
-                    RequestedBy = 1,
-                }
-            );
-            torrent = res.Entity;
-            await _context.SaveChangesAsync();
-        }
-        else
-        {
-            torrent.IsDownloaded = true;
-            _context.Attach(torrent);
-            _context.Update(torrent);
-        }
-        
+            new NpgsqlParameter("@Name", torrentManager.Name),
+            new NpgsqlParameter("@CreatedAt", DateTime.UtcNow.Ticks.ToString()),
+            new NpgsqlParameter("@CreatedBy", 1),
+            new NpgsqlParameter("@IsDownloaded", true),
+            new NpgsqlParameter("@IsSeeding", true),
+            new NpgsqlParameter("@RequestedBy", 1),
+        };
+
+        await using var command = CreateCommand(sql, parameters);
+        await command.ExecuteNonQueryAsync();
+
         foreach (var torrentManagerFile in torrentManager.Files)
         {
             var filePath = torrentManagerFile.DownloadCompleteFullPath;
-            await AddMovie(filePath, category, torrent);
+            await AddMovie(filePath, category, torrentManager.Name);
         }
     }
 
-    private async Task<bool> AddMovie(string filePath, int category, Dtorrent torrent)
+    private async Task<bool> AddMovie(string filePath, int category, string torrentName)
     {
         var extension = _storage.GetFileExtension(filePath);
         if (!VideoFileFormats.Formats.Contains(extension.ToLower())) return false;
-                
-        // var result = await _ffmpegService.ConvertToBinary(name, VideoType.MP4, name);
-        var lenght =  _ffmpegService.GetMovieLenght(filePath);
 
-        var exists = await _context.Movies.FirstOrDefaultAsync(x => x.Name == torrent.Name);
-        if (exists != null) return false;
+        var length = _ffmpegService.GetMovieLenght(filePath);
 
-        var thumbnail = await _ffmpegService.GenerateThumbnailAsync(filePath, TimeSpan.FromMinutes(10));
-        _context.Movies.Add(
-            new Movie
-            {
-                CategoryId = category,
-                Torrent = torrent,
-                Name = torrent.Name,
-                Path = filePath,
-                TimeData = lenght,
-                TorrentId = torrent.Id,
-                Thumbnail = Convert.ToBase64String(thumbnail)
-            }
+        const string sql = """
+                           INSERT INTO Movies (CategoryId, Name, Path, TimeData, TorrentId, Thumbnail) 
+                           VALUES (@CategoryId, @Name, @Path, @TimeData, @TorrentId, @Thumbnail)
+                           """;
+
+
+        var thumbnail = Convert.ToBase64String(
+            await _ffmpegService.GenerateThumbnailAsync(filePath, TimeSpan.FromMinutes(10))
         );
-        
-        await _context.SaveChangesAsync();
+        await using var command = CreateCommand(sql, 
+            new NpgsqlParameter("@CategoryId", category),
+            new NpgsqlParameter("@Name", torrentName),
+            new NpgsqlParameter("@Path", filePath),
+            new NpgsqlParameter("@TimeData", length),
+            new NpgsqlParameter("@TorrentId", await GetTorrentIdByName(torrentName)),
+            new NpgsqlParameter("@Thumbnail", thumbnail),
+            new NpgsqlParameter("@CategoryId", category)
+        );
+        await command.ExecuteNonQueryAsync();
+
         return true;
+    }
+
+    private async Task<int> GetTorrentIdByName(string name)
+    {
+        var sql = "SELECT Id FROM \"DTorrents\" WHERE Name = @Name";
+
+        
+
+        await using var command = CreateCommand(sql,new NpgsqlParameter("@Name", name));
+        var result = await command.ExecuteScalarAsync();
+
+        return result != null ? Convert.ToInt32(result) : -1;
     }
 
     public async Task<bool> DeleteTorrent(int id)
     {
-        var torrent = await _context.Dtorrents.FirstOrDefaultAsync(x => x.Id == id);
-        if (torrent == null) return false;
+        var sql = "DELETE FROM \"DTorrents\" WHERE Id = @Id";
 
-        _context.Dtorrents.Remove(torrent);
-        await _context.SaveChangesAsync();
-        return true;
+        var parameters = new NpgsqlParameter[]
+        {
+            new NpgsqlParameter("@Id", id),
+        };
+
+        await using var command = CreateCommand(sql, parameters);
+        var rowsAffected = await command.ExecuteNonQueryAsync();
+
+        return rowsAffected > 0;
     }
 }
