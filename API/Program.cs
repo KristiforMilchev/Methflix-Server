@@ -18,6 +18,7 @@ builder.Services.AddSingleton<ITorrentNotifier>(notifier);
 builder.Services.AddSingleton<ITorrentService>(new TorrentService(configuration, notifier));
 builder.Services.AddTransient<IFfmpegService, FfmpegService>();
 builder.Services.AddTransient<IStorageService, StorageService>();
+builder.Services.AddSingleton<IAuthorizationService>(new AuthorizationService());
 
 //Repositories
 builder.Services.AddTransient<ITvShowsRepository, TvShowsRepository>();
