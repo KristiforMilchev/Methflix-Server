@@ -17,7 +17,8 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<List<Movie>> GetAllMovies()
     {
-        await using var command = CreateCommand("SELECT * FROM Movies", Array.Empty<NpgsqlParameter>());
+        await using var command = CreateCommand("""SELECT * FROM "Movies" """, Array.Empty<NpgsqlParameter>());
+        await _connection.OpenAsync();
         await using var reader = await command.ExecuteReaderAsync();
         var movies = new List<Movie>();
         while (await reader.ReadAsync())
@@ -51,7 +52,9 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<Category?> GetCategoryMovies(int categoryId)
     {
-        var sql = "SELECT * FROM Categories WHERE Id = @CategoryId";
+        var sql = """SELECT * FROM "Category" WHERE Id = @CategoryId""";
+        await _connection.OpenAsync();
+
         var parameters = new NpgsqlParameter[]
         {
             new("@CategoryId", categoryId)
@@ -60,35 +63,40 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
         await using var reader = await command.ExecuteReaderAsync();
 
-        if (await reader.ReadAsync())
+        if (!await reader.ReadAsync()) return null;
+        
+        var category = new Category
         {
-            var category = new Category
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                Name = reader.GetString(reader.GetOrdinal("Name")),
-                CreatedBy = reader.GetInt32(reader.GetOrdinal("CreatedBy")),
-                CreatedAt = reader.GetString(reader.GetOrdinal("CreatedAt")),
-                UpdatedBy = reader.IsDBNull(reader.GetOrdinal("UpdatedBy"))
-                    ? null
-                    : reader.GetInt32(reader.GetOrdinal("UpdatedBy")),
-                UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("UpdatedAt")),
-                IsDeleted = reader.IsDBNull(reader.GetOrdinal("IsDeleted"))
-                    ? null
-                    : reader.GetInt32(reader.GetOrdinal("IsDeleted"))
-            };
+            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            Name = reader.GetString(reader.GetOrdinal("Name")),
+            CreatedBy = reader.GetInt32(reader.GetOrdinal("CreatedBy")),
+            CreatedAt = reader.GetString(reader.GetOrdinal("CreatedAt")),
+            UpdatedBy = reader.IsDBNull(reader.GetOrdinal("UpdatedBy"))
+                ? null
+                : reader.GetInt32(reader.GetOrdinal("UpdatedBy")),
+            UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("UpdatedAt")),
+            IsDeleted = reader.IsDBNull(reader.GetOrdinal("IsDeleted"))
+                ? null
+                : reader.GetInt32(reader.GetOrdinal("IsDeleted"))
+        };
 
-            return category;
-        }
+        return category;
 
-        return null;
     }
 
     public async Task<List<Category>> GetCategoryWithMovies()
     {
+        var query =
+            """
+            SELECT * FROM "Category" WHERE Id IN 
+            (SELECT DISTINCT CategoryId FROM Movies WHERE TvShowId IS NULL)
+            """;
+        await _connection.OpenAsync();
+        
         await using var command = CreateCommand(
-            "SELECT * FROM Categories WHERE Id IN (SELECT DISTINCT CategoryId FROM Movies WHERE TvShowId IS NULL)",
+            query,
             Array.Empty<NpgsqlParameter>()
         );
         await using var reader = await command.ExecuteReaderAsync();
@@ -117,9 +125,12 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<bool> UpdateMovie(Movie movie)
     {
-        var query = @"UPDATE Movies SET Name = @Name, TimeData = @TimeData, Path = @Path, CategoryId = @CategoryId,
-                 TorrentId = @TorrentId, DownloadId = @DownloadId, Extension = @Extension, Thumbnail = @Thumbnail,
-                 TvShowId = @TvShowId WHERE Id = @Id";
+        var query = """
+                    UPDATE "Movies" SET Name = @Name, TimeData = @TimeData, Path = @Path, CategoryId = @CategoryId,
+                                     TorrentId = @TorrentId, DownloadId = @DownloadId, Extension = @Extension, Thumbnail = @Thumbnail,
+                                     TvShowId = @TvShowId WHERE Id = @Id
+                    """;
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -146,9 +157,12 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<List<TvShow>> GetCategoryTvShows(int id)
     {
-        const string sql = "SELECT ts.Id, ts.Name, ts.Season, ts.CreatedBy, ts.CreatedAt " +
-                           "FROM TvShows ts " +
-                           "WHERE ts.Id IN (SELECT DISTINCT TvShowId FROM Movies WHERE CategoryId = @CategoryId)";
+        const string sql = """
+                           SELECT ts.Id, ts.Name, ts.Season, ts.CreatedBy, ts.CreatedAt
+                           FROM "TvShows" ts 
+                           WHERE ts.Id IN (SELECT DISTINCT TvShowId FROM "Movies" WHERE CategoryId = @CategoryId)
+                           """;
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -185,10 +199,13 @@ public class MovieRepository : BaseRepository, IMovieRepository
     public async Task<TvShowSeasonDto> GetTvShowEpisodesById(int id)
     {
         var sql =
-            "SELECT ASE.\"Season\", m.\"TvShowId\", m.\"Id\", m.\"Name\" " +
-            "FROM \"AssociatedSeasonEpisodes\" ASE " +
-            "JOIN \"Movies\" m ON m.\"Id\" = ASE.\"MovieId\" " +
-            "WHERE ASE.\"TvShowId\" = @TvShowId";
+            """
+            SELECT ASE."Season", m."TvShowId", m."Id", m."Name"
+            FROM "AssociatedSeasonEpisodes" ASE
+            JOIN "Movies" m ON m."Id" = ASE."MovieId"
+            WHERE ASE."TvShowId" = @TvShowId
+            """;
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -227,7 +244,8 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<Movie?> GetMovieById(int id)
     {
-        var sql = "SELECT * FROM Movies WHERE Id = @Id";
+        var sql = """SELECT * FROM "Movies" WHERE Id = @Id""";
+        await _connection.OpenAsync();
 
         var parameters = new NpgsqlParameter[]
         {
