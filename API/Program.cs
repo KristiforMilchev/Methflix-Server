@@ -1,21 +1,16 @@
 using API;
 using Application.Repositories;
 using Application.Services;
-using Domain.Context;
 using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
-using MonoTorrent.Client;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
 // Add services to the container.
  
 builder.Services.AddControllers();
-builder.Services.AddDbContext<MethflixContext>(
-    options =>
-        options.UseNpgsql(configuration.GetConnectionString("PostgradeSQL"))
-);
+builder.Services.AddScoped<NpgsqlConnection>(_ => new NpgsqlConnection(configuration.GetConnectionString("YourConnectionString")));
 
 //Injecting shared dependencies
 var notifier = new TorrentNotifier();
@@ -25,6 +20,7 @@ builder.Services.AddTransient<IFfmpegService, FfmpegService>();
 builder.Services.AddTransient<IStorageService, StorageService>();
 
 //Repositories
+builder.Services.AddTransient<ITvShowsRepository, TvShowsRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<ITorrentRepository, TorrentRepository>();
 builder.Services.AddTransient<ICategoryRepository, CategoryRepository>();
@@ -37,10 +33,9 @@ var app = builder.Build();
 
 var scope = app.Services.CreateScope();
 var torrentService = app.Services.GetService<ITorrentService>();
-var context = scope.ServiceProvider.GetService<MethflixContext>();
 var torrentRepository = scope.ServiceProvider.GetService<ITorrentRepository>();
 
-using var common = new Common(torrentRepository!, context!);
+using var common = new Common(torrentRepository!);
 
 var cta = new CancellationToken();
 Task.Run((async () => await torrentService!.StartServer(cta)));
