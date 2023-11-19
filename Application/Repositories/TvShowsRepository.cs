@@ -16,7 +16,7 @@ public class TvShowsRepository : BaseRepository, ITvShowsRepository
     {
         var result = "";
         var sql = """SELECT "Name" FROM "TvShows"  WHERE "Id" = @TvShowId""";
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         await using var command = CreateCommand(sql, new NpgsqlParameter("@TvShowId", id));
         await using var reader = await command.ExecuteReaderAsync();

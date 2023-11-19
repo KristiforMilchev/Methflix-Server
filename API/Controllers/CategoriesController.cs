@@ -31,7 +31,7 @@ public class CategoriesController : ControllerBase
 
     [HttpGet("Get-Category/{id}")]
     public async Task<IActionResult> GetCategory(int id)
-    {
+    { 
         var category = await _categoryRepository.GetCategory(id);
         return category == null ? StatusCode(500) : Ok(new CategoryResponseDto
         {

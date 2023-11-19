@@ -34,7 +34,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
                            IsDeleted)
                            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @Location, @IsDeleted)
                            """;
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -60,7 +60,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
             ON CONFLICT (Name) DO UPDATE
             SET IsDownloaded = EXCLUDED.IsDownloaded
             """;
-        await _connection.OpenAsync();
+        await OpenConnection();
      
         var parameters = new NpgsqlParameter[]
         {
@@ -94,7 +94,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
                            VALUES (@CategoryId, @Name, @Path, @TimeData, @TorrentId, @Thumbnail)
                            """;
 
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         var thumbnail = Convert.ToBase64String(
             await _ffmpegService.GenerateThumbnailAsync(filePath, TimeSpan.FromMinutes(10))
@@ -127,7 +127,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
     public async Task<bool> DeleteTorrent(int id)
     {
         var sql = """DELETE FROM "DTorrents" WHERE Id = @Id""";
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         var parameters = new NpgsqlParameter[]
         {
@@ -139,4 +139,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
 
         return rowsAffected > 0;
     }
+
+   
+    
 }
