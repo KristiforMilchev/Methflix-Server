@@ -12,11 +12,6 @@ public class AuthorizationService : IAuthorizationService
     public AuthorizationService()
     {
         _timer = new Timer(OnTokensExpire, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
-
-        Console.WriteLine("Press Enter to exit.");
-        Console.ReadLine();
-
-      
     }
 
     private void OnTokensExpire(object? state)

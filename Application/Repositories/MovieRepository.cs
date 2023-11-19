@@ -53,7 +53,7 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<Category?> GetCategoryMovies(int categoryId)
     {
-        var sql = """SELECT * FROM "Category" WHERE Id = @CategoryId""";
+        const string sql = """SELECT "Id","Name" FROM "Category" c WHERE c."Id" = @CategoryId""";
         await OpenConnection();
 
         var parameters = new NpgsqlParameter[]
@@ -70,37 +70,41 @@ public class MovieRepository : BaseRepository, IMovieRepository
         {
             Id = reader.GetInt32(reader.GetOrdinal("Id")),
             Name = reader.GetString(reader.GetOrdinal("Name")),
-            CreatedBy = reader.GetInt32(reader.GetOrdinal("CreatedBy")),
-            CreatedAt = reader.GetString(reader.GetOrdinal("CreatedAt")),
-            UpdatedBy = reader.IsDBNull(reader.GetOrdinal("UpdatedBy"))
-                ? null
-                : reader.GetInt32(reader.GetOrdinal("UpdatedBy")),
-            UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt"))
-                ? null
-                : reader.GetString(reader.GetOrdinal("UpdatedAt")),
-            IsDeleted = reader.IsDBNull(reader.GetOrdinal("IsDeleted"))
-                ? null
-                : reader.GetInt32(reader.GetOrdinal("IsDeleted"))
         };
+        await reader.CloseAsync();
+        
+        const string moviesQuery = """
+                                   SELECT "Id","Name", "Thumbnail", "TimeData", "CategoryId", "Path"
+                                   FROM "Movies" m
+                                   WHERE m."CategoryId" = @CategoryId
+                                   """;
+        await using var movieCommand = CreateCommand(moviesQuery, new NpgsqlParameter("@CategoryId", categoryId));
+        await using var movieReader = await movieCommand.ExecuteReaderAsync();
 
+        if (!await movieReader.ReadAsync()) return category;
+
+        while (await movieReader.ReadAsync())
+            category.Movies.Add(new Movie
+            {
+                Id = movieReader.GetInt32(movieReader.GetOrdinal("Id")),
+                Name = movieReader.GetString(movieReader.GetOrdinal("Name")),
+                Path = movieReader.GetString(movieReader.GetOrdinal("Path")),
+                Thumbnail = movieReader.GetString(movieReader.GetOrdinal("Thumbnail")),
+                TimeData = movieReader.GetTimeSpan(movieReader.GetOrdinal("TimeData"))
+            });
+
+        await movieReader.CloseAsync();
         return category;
-
     }
 
     public async Task<List<Category>> GetCategoryWithMovies()
     {
-        var query =
-            """
-            SELECT c."Id" as "Category_Id" , c."Name" as "Category_Name", m."Id", m."Name", m."Extension", m."Path", m
-            ."Thumbnail", m
-            ."TimeData" FROM 
-            "Movies" m JOIN 
-            "Category" c on m
-            ."CategoryId" = c
-            ."Id" WHERE  m
-            ."TvShowId" is 
-            null
-            """;
+        const string query = """
+                             SELECT c."Id" as "Category_Id" , c."Name" as "Category_Name", m."Id", m."Name",
+                                    m."Extension", m."Path", m."Thumbnail", m."TimeData"
+                             FROM "Movies" m JOIN "Category" c on m."CategoryId" = c."Id"
+                             WHERE  m."TvShowId" is null
+                             """;
         await OpenConnection();
         
         await using var command = CreateCommand(
@@ -126,7 +130,6 @@ public class MovieRepository : BaseRepository, IMovieRepository
                             {
                                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
                                 Name = reader.GetString(reader.GetOrdinal("Name")),
-
                                 Path = reader.GetString(reader.GetOrdinal("Path")),
                                 Thumbnail = reader.GetString(reader.GetOrdinal("Thumbnail")),
                                 TimeData = reader.GetTimeSpan(reader.GetOrdinal("TimeData"))
@@ -228,6 +231,9 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<TvShowSeasonDto> GetTvShowEpisodesById(int id)
     {
+        var showName = await _tvShowsRepository.TvShowName(id);
+        if (showName == string.Empty) return new TvShowSeasonDto();
+        
         var sql =
             """
             SELECT ASE."Season", m."TvShowId", m."Id", m."Name"
@@ -245,8 +251,7 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
         await using var reader = await command.ExecuteReaderAsync();
         var tvShowSeasonData = new TvShowSeasonDto();
-        var showName = await _tvShowsRepository.TvShowName(id);
-        if (showName == string.Empty) return new TvShowSeasonDto();
+
 
         tvShowSeasonData.Name = showName;
         while (await reader.ReadAsync())
@@ -274,7 +279,7 @@ public class MovieRepository : BaseRepository, IMovieRepository
 
     public async Task<Movie?> GetMovieById(int id)
     {
-        var sql = """SELECT * FROM "Movies" WHERE Id = @Id""";
+        var sql = """SELECT * FROM "Movies" m WHERE m."Id" = @Id""";
         await OpenConnection();
 
         var parameters = new NpgsqlParameter[]
