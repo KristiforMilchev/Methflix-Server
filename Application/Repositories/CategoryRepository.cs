@@ -5,7 +5,7 @@ using Npgsql;
 
 namespace Application.Repositories;
 
-public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposable
+public class CategoryRepository : BaseRepository, ICategoryRepository 
 {
     private readonly IMovieRepository _movieRepository;
     public CategoryRepository(NpgsqlConnection connection, IMovieRepository movieRepository) : base(connection)
@@ -15,8 +15,8 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
 
     public async Task<Category?> GetCategory(int id)
     {
-        var sql = "SELECT * FROM Categories WHERE Id = @Id";
-        await _connection.OpenAsync();
+        var sql = """SELECT * FROM "Category" WHERE Id = @Id""";
+        await OpenConnection();
 
         await using var command = CreateCommand(sql, new NpgsqlParameter("@Id", id));
         
@@ -42,7 +42,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
     {
         var categories = new List<Category>();
         var sql = """SELECT * FROM "Category" """;
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         await using var command = CreateCommand(sql);
 
@@ -71,7 +71,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
                   UPDATE "Category" SET Name = @Name, CreatedBy = @CreatedBy, CreatedAt = @CreatedAt, UpdatedBy =
                   @UpdatedBy, UpdatedAt = @UpdatedAt, IsDeleted = @IsDeleted WHERE Id = @Id
                   """;
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         await using var command = CreateCommand(sql,
             new NpgsqlParameter("@Id", category.Id),
@@ -93,7 +93,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
                   INSERT INTO "Category" (Name, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, IsDeleted)
                   VALUES (@Name, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt, @IsDeleted)
                   """;
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         await using var command = CreateCommand(sql,
             new NpgsqlParameter("@Name", category.Name),
@@ -112,7 +112,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
     {
         var categoryMovies = await _movieRepository.GetCategoryMovies(id);
         if (categoryMovies == null) return false;
-        await _connection.OpenAsync();
+        await OpenConnection();
 
         await using var transaction = await _connection.BeginTransactionAsync();
         try
@@ -135,10 +135,5 @@ public class CategoryRepository : BaseRepository, ICategoryRepository, IDisposab
             await transaction.RollbackAsync();
             return false;
         }
-    }
-
-    public async void Dispose()
-    {
-       await _connection.CloseAsync();
     }
 }
