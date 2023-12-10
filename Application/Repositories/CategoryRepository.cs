@@ -15,7 +15,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
 
     public async Task<Category?> GetCategory(int id)
     {
-        var sql = """SELECT * FROM "Category" WHERE Id = @Id""";
+        var sql = """SELECT * FROM "Category" WHERE "Id" = @Id""";
         await OpenConnection();
 
         await using var command = CreateCommand(sql, new NpgsqlParameter("@Id", id));
@@ -68,8 +68,8 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
     public async Task<bool> UpdateCategory(Category category)
     {
         var sql = """
-                  UPDATE "Category" SET Name = @Name, CreatedBy = @CreatedBy, CreatedAt = @CreatedAt, UpdatedBy =
-                  @UpdatedBy, UpdatedAt = @UpdatedAt, IsDeleted = @IsDeleted WHERE Id = @Id
+                  UPDATE "Category" SET "Name" = @Name, "CreatedBy" = @CreatedBy, "CreatedAt" = @CreatedAt, "UpdatedBy" =
+                  @UpdatedBy, "UpdatedAt" = @UpdatedAt, "IsDeleted" = @IsDeleted WHERE "Id" = @Id
                   """;
         await OpenConnection();
 
@@ -90,7 +90,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
     public async Task<bool> AddCategory(Category category)
     {
         var sql = """
-                  INSERT INTO "Category" (Name, CreatedBy, CreatedAt, UpdatedBy, UpdatedAt, IsDeleted)
+                  INSERT INTO "Category" ("Name", "CreatedBy", "CreatedAt", "UpdatedBy", "UpdatedAt", "IsDeleted")
                   VALUES (@Name, @CreatedBy, @CreatedAt, @UpdatedBy, @UpdatedAt, @IsDeleted)
                   """;
         await OpenConnection();
@@ -122,7 +122,7 @@ public class CategoryRepository : BaseRepository, ICategoryRepository
                 await _movieRepository.UpdateMovie(movie);
             }
 
-            var sqlDelete = """DELETE FROM "Category" WHERE Id = @Id""";
+            var sqlDelete = """DELETE FROM "Category" WHERE "Id" = @Id""";
             await using var command = CreateCommand(sqlDelete, new NpgsqlParameter("@Id", id));
 
             await command.ExecuteNonQueryAsync();

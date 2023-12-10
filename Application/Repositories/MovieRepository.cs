@@ -159,9 +159,9 @@ public class MovieRepository : BaseRepository, IMovieRepository
     public async Task<bool> UpdateMovie(Movie movie)
     {
         var query = """
-                    UPDATE "Movies" SET Name = @Name, TimeData = @TimeData, Path = @Path, CategoryId = @CategoryId,
-                                     TorrentId = @TorrentId, DownloadId = @DownloadId, Extension = @Extension, Thumbnail = @Thumbnail,
-                                     TvShowId = @TvShowId WHERE Id = @Id
+                    UPDATE "Movies" SET "Name" = @Name, "TimeData" = @TimeData, "Path" = @Path, "CategoryId" = @CategoryId,
+                                     "TorrentId" = @TorrentId, "DownloadId" = @DownloadId, "Extension" = @Extension, "Thumbnail" = @Thumbnail,
+                                     "TvShowId" = @TvShowId WHERE "Id" = @Id
                     """;
         await OpenConnection();
 
@@ -191,7 +191,7 @@ public class MovieRepository : BaseRepository, IMovieRepository
     public async Task<List<TvShow>> GetCategoryTvShows(int id)
     {
         const string sql = """
-                           SELECT ts."Id", ts."Name", ts."Season", ts."CreatedBy", ts."CreatedAt"
+                           SELECT ts."Id", ts."Name", ts."Seasons", ts."CreatedBy", ts."CreatedAt"
                            FROM "TvShows" ts
                            WHERE ts."Id" IN (SELECT DISTINCT "TvShowId" FROM "Movies" WHERE "CategoryId" = @CategoryId)
                            """;
