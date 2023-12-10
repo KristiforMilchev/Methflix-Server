@@ -30,8 +30,8 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
     public async Task CreateTorrent(string name)
     {
         const string sql = """
-                           INSERT INTO DTorrents (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, Location, 
-                           IsDeleted)
+                           INSERT INTO "DTorrents" ("Name", "CreatedAt", "CreatedBy", "IsDownloaded", "IsSeeding", 
+                           "Location", "IsDeleted")
                            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @Location, @IsDeleted)
                            """;
         await OpenConnection();
@@ -55,10 +55,10 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
     {
         var sql =
             """
-            INSERT INTO "DTorrents" (Name, CreatedAt, CreatedBy, IsDownloaded, IsSeeding, RequestedBy)
-            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding, @RequestedBy)
-            ON CONFLICT (Name) DO UPDATE
-            SET IsDownloaded = EXCLUDED.IsDownloaded
+            INSERT INTO "DTorrents" ("Name", "CreatedAt", "CreatedBy", "IsDownloaded", "IsSeeding")
+            VALUES (@Name, @CreatedAt, @CreatedBy, @IsDownloaded, @IsSeeding)
+            ON CONFLICT ("Name") DO UPDATE
+            SET "IsDownloaded" = EXCLUDED."IsDownloaded"
             """;
         await OpenConnection();
      
@@ -90,7 +90,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
         var length = _ffmpegService.GetMovieLenght(filePath);
 
         const string sql = """
-                           INSERT INTO "Movies" (CategoryId, Name, Path, TimeData, TorrentId, Thumbnail) 
+                           INSERT INTO "Movies" ("CategoryId", "Name", "Path", "TimeData", "TorrentId", "Thumbnail") 
                            VALUES (@CategoryId, @Name, @Path, @TimeData, @TorrentId, @Thumbnail)
                            """;
 
@@ -115,7 +115,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
 
     private async Task<int> GetTorrentIdByName(string name)
     {
-        var sql = """SELECT Id FROM "DTorrents" WHERE Name = @Name""";
+        var sql = """SELECT "Id" FROM "DTorrents" WHERE "Name" = @Name""";
         await _connection.OpenAsync();
         
         await using var command = CreateCommand(sql,new NpgsqlParameter("@Name", name));
@@ -126,7 +126,7 @@ public class TorrentRepository : BaseRepository, ITorrentRepository
 
     public async Task<bool> DeleteTorrent(int id)
     {
-        var sql = """DELETE FROM "DTorrents" WHERE Id = @Id""";
+        var sql = """DELETE FROM "DTorrents" WHERE "Id" = @Id""";
         await OpenConnection();
 
         var parameters = new NpgsqlParameter[]
