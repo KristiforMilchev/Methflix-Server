@@ -13,11 +13,13 @@ public class FfmpegService : IFfmpegService
      private readonly IStorageService _storage;
     private readonly string _moviesFolder;
     private readonly string _streamingFolder;
+    private readonly string _ffmpegBinariesPath;
     public FfmpegService(IStorageService storageService, IConfiguration configuration)
     {
         _storage = storageService;
         _moviesFolder = configuration["StorageManager:Internal"] ?? string.Empty;
         _streamingFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
+        _ffmpegBinariesPath = configuration["FfMPEG"] ?? string.Empty;
     }
     
     public string GetChunk(int start, int end, string file, string name)
@@ -69,7 +71,7 @@ public class FfmpegService : IFfmpegService
 
         var conversion = new FFmpegClient(
             new FFmpegClientOptions(
-                "/home/kristifor/software",
+                _ffmpegBinariesPath,
                 true
             )
         );
@@ -82,11 +84,11 @@ public class FfmpegService : IFfmpegService
         
         var conversion = new FFmpegClient(
             new FFmpegClientOptions(
-                "/home/kristifor/software",
+                _ffmpegBinariesPath,
                 true
             )
         );
-        
+
         await conversion.ConvertAsync(new MediaFile(path, false), type, _moviesFolder);
 
         return $"{_moviesFolder}/{path}{type.ToString()}";

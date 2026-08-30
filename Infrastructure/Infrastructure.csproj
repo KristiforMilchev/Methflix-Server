@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Infrastructure</RootNamespace>
@@ -12,18 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="FFmpeg.Net">
-          <HintPath>..\..\..\..\.nuget\packages\ffmpeg.net\1.1.0\lib\net5.0\FFmpeg.Net.dll</HintPath>
-        </Reference>
-        <Reference Include="Microsoft.AspNetCore.Http.Features">
-            <HintPath>..\..\..\..\.nuget\packages\microsoft.aspnetcore.app.ref\7.0.11\ref\net7.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
-        </Reference>
-        <Reference Include="MonoTorrent.Client">
-          <HintPath>..\..\..\..\.nuget\packages\monotorrent\3.0.0-beta.rev0159\lib\net6.0\MonoTorrent.Client.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
+      <PackageReference Include="FFmpeg.NET" Version="1.1.0"/>
+      <PackageReference Include="MonoTorrent" Version="3.0.0-beta.rev0159"/>
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     </ItemGroup>
 
