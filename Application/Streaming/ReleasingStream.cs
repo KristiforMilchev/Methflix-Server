@@ -1,4 +1,4 @@
-namespace Application.Services;
+namespace Application.Streaming;
 
 // Releases a per-torrent stream lock once the caller disposes the stream, so the
 // next request for the same torrent can open a new StreamProvider stream.
