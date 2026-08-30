@@ -52,18 +52,19 @@ public class AuthenticationController : ControllerBase
             var key = new SymmetricSecurityKey(bytes);
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.UtcNow.AddHours(1); // Adjust the expiration time as needed
 
             var token = new JwtSecurityToken(
                 issuer: "Methflix",
                 audience: "IOT Device",
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(1), // Adjust the expiration time as needed
+                expires: expires,
                 signingCredentials: credentials
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            
-            return Ok(new { Token = tokenString });
+
+            return Ok(new { Token = tokenString, Expires = expires });
         }
         catch (Exception ex)
         {

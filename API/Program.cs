@@ -25,6 +25,10 @@ builder.Services.AddTransient<ITvShowsRepository, TvShowsRepository>();
 builder.Services.AddTransient<IMovieRepository, MovieRepository>();
 builder.Services.AddTransient<ITorrentRepository, TorrentRepository>();
 builder.Services.AddTransient<ICategoryRepository, CategoryRepository>();
+builder.Services.AddTransient<ISiteConnectorRepository, SiteConnectorRepository>();
+builder.Services.AddHttpClient<IPageFetcher, HttpPageFetcher>();
+builder.Services.AddSingleton<IPageFetcher, HeadlessBrowserPageFetcher>();
+builder.Services.AddTransient<IIndexerService, IndexerService>();
 builder.Services.AddTransient<ICdnService, CdnService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

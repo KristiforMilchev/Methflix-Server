@@ -22,8 +22,9 @@ public class Common :IDisposable
         }
         
         if(torrent.Progress < 100) return;
-        
-        _torrentRepository.UpdateTorrentDownloadComplete(torrent);
+
+        var categoryId = PendingCategoryAssignments.TakeOrDefault(torrent.Name);
+        _torrentRepository.UpdateTorrentDownloadComplete(torrent, categoryId);
         Notifier.Dispose(torrent.Name);
     }
 

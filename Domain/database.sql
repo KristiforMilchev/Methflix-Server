@@ -173,3 +173,45 @@ create table "AccessKeys"
 alter table "AccessKeys"
     owner to postgres;
 
+create table "SiteConnectors"
+(
+    "Id"                 serial
+        constraint "SiteConnectors_pk"
+            primary key,
+    "Name"               varchar(100)  not null,
+    "BaseUrl"            varchar(300)  not null,
+    "TopListingPath"     varchar(300)  not null,
+    "FetchStrategy"      integer       not null default 0,
+    "RowSelector"        varchar(300)  not null,
+    "TitleSelector"      varchar(300)  not null,
+    "DetailLinkSelector" varchar(300)  not null,
+    "MagnetSelector"     varchar(300)  not null,
+    "CreatedBy"          integer       not null
+        constraint "SiteConnectors_Accounts_Id_fk"
+            references "Accounts",
+    "CreatedAt"          timestamp,
+    "IsDeleted"          boolean       not null default false
+);
+
+alter table "SiteConnectors"
+    owner to postgres;
+
+create table "SiteCategoryRoutes"
+(
+    "Id"              serial
+        constraint "SiteCategoryRoutes_pk"
+            primary key,
+    "SiteConnectorId" integer      not null
+        constraint "SiteCategoryRoutes_SiteConnectors_Id_fk"
+            references "SiteConnectors",
+    "CategoryId"      integer      not null
+        constraint "SiteCategoryRoutes_Category_Id_fk"
+            references "Category",
+    "Label"           varchar(100) not null,
+    "PathTemplate"    varchar(300) not null,
+    "CreatedAt"       timestamp
+);
+
+alter table "SiteCategoryRoutes"
+    owner to postgres;
+

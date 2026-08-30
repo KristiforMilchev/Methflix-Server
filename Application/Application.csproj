@@ -7,16 +7,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Domain\Domain.csproj"/>
+        <ProjectReference Include="..\Domain\Domain.csproj" />
         <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="FFmpeg.NET" Version="1.1.0"/>
+        <PackageReference Include="AngleSharp" Version="1.1.2" />
+        <PackageReference Include="FFmpeg.NET" Version="1.1.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.12" />
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="7.0.0" />
-        <PackageReference Include="MonoTorrent" Version="3.0.0-beta.rev0159"/>
+        <PackageReference Include="MonoTorrent" Version="3.0.0-beta.rev0159" />
         <PackageReference Include="NSec.Cryptography" Version="23.9.0-preview.3" />
+        <PackageReference Include="PuppeteerSharp" Version="25.8.0" />
         <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     </ItemGroup>
 
