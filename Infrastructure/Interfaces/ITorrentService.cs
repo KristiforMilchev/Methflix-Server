@@ -15,4 +15,5 @@ public interface ITorrentService
     public Task<bool> CancelDownload(string name);
     public ActiveTorrent? GetTorrentData(string name);
     public List<ActiveTorrent> GetAllTorrents();
+    public Task<TorrentStreamResult?> OpenStreamAsync(string name, CancellationToken token);
 }

@@ -15,15 +15,27 @@ public class VideoController : ControllerBase
     private readonly IMovieRepository _movieRepository;
     private readonly string _segmentFolder;
     private readonly IStorageService _storage;
+    private readonly ITorrentService _torrentService;
 
     public VideoController(IConfiguration configuration, IFfmpegService ffmpegService, IStorageService storageService,
-        IMovieRepository movieRepository, ICdnService cdnService)
+        IMovieRepository movieRepository, ICdnService cdnService, ITorrentService torrentService)
     {
         _segmentFolder = configuration["StorageManager:StreamSegments"] ?? string.Empty;
         _ffmpegService = ffmpegService;
         _storage = storageService;
         _movieRepository = movieRepository;
         _cdnService = cdnService;
+        _torrentService = torrentService;
+    }
+
+    [HttpGet]
+    [Route("StreamTorrent/{name}")]
+    public async Task<IActionResult> StreamTorrent(string name)
+    {
+        var result = await _torrentService.OpenStreamAsync(name, HttpContext.RequestAborted);
+        if (result == null) return NotFound();
+
+        return File(result.Stream, result.ContentType, result.FileName, enableRangeProcessing: true);
     }
 
     [HttpGet]

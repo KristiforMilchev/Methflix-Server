@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Text;
 using System.Web;
+using Application.Streaming;
 using Domain.Dtos;
 using Domain.Models;
 using Infrastructure.Interfaces;
@@ -13,13 +15,24 @@ namespace Application.Services;
 
 public class TorrentService : ITorrentService
 {
+    private static readonly Dictionary<string, string> StreamContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".mp4"] = "video/mp4",
+        [".m4v"] = "video/mp4",
+        [".mov"] = "video/quicktime",
+        [".mkv"] = "video/x-matroska",
+        [".webm"] = "video/webm",
+        [".avi"] = "video/x-msvideo",
+    };
+
     private readonly string _downloadDirectory;
     private readonly string _torrentPath;
     private readonly ITorrentNotifier _torrentNotifier;
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _streamLocks = new();
     private bool IsRunning { get; set; }
     private List<TorrentManager> ActiveTorrents { get; set; }
     private ClientEngine Engine { get; }
-    
+
     public TorrentService(IConfiguration configuration,  ITorrentNotifier notifier)
     {
         ActiveTorrents = new List<TorrentManager>();
@@ -220,7 +233,7 @@ public class TorrentService : ITorrentService
                 webSeeds: null, // webSeeds and size are not provided in the magnet link
                 size: null
             );
-             var torrentManager = await Engine.AddAsync(magnetLink, _downloadDirectory);
+             var torrentManager = await Engine.AddStreamingAsync(magnetLink, _downloadDirectory);
             await torrentManager.StartAsync();
             ActiveTorrents.Add(torrentManager);
             return true;
@@ -308,7 +321,8 @@ public class TorrentService : ITorrentService
             {
                 MaximumConnections = 60
             };
-            var manager = await Engine.AddAsync(filePath, _downloadDirectory, settingsBuilder.ToSettings());
+            var manager = await Engine.AddStreamingAsync(filePath, _downloadDirectory, settingsBuilder.ToSettings());
+            await manager.StartAsync();
             ActiveTorrents.Add(manager);
             return true;
         }
@@ -357,6 +371,39 @@ public class TorrentService : ITorrentService
 
     }
 
+    public async Task<TorrentStreamResult?> OpenStreamAsync(string name, CancellationToken token)
+    {
+        var manager = Engine.Torrents.FirstOrDefault(x => x.Name == name);
+        if (manager?.StreamProvider == null) return null;
+
+        var file = manager.Files
+            .Where(f => VideoFileFormats.Formats.Contains(Path.GetExtension(f.Path), StringComparer.OrdinalIgnoreCase))
+            .OrderByDescending(f => f.Length)
+            .FirstOrDefault();
+        if (file == null) return null;
+
+        // MonoTorrent only allows one active stream per torrent at a time - the previous one
+        // must be disposed before a new one is created. Serialize access per-torrent so that
+        // e.g. seeking (which opens a new range request) doesn't throw on the old stream.
+        var streamLock = _streamLocks.GetOrAdd(name, _ => new SemaphoreSlim(1, 1));
+        await streamLock.WaitAsync(token);
+
+        Stream stream;
+        try
+        {
+            stream = await manager.StreamProvider.CreateStreamAsync(file, prebuffer: true, token);
+        }
+        catch
+        {
+            streamLock.Release();
+            throw;
+        }
+
+        var extension = Path.GetExtension(file.Path);
+        var contentType = StreamContentTypes.GetValueOrDefault(extension, "video/mp4");
+        return new TorrentStreamResult(new ReleasingStream(stream, streamLock), Path.GetFileName(file.Path), contentType);
+    }
+
     private async Task LoadTorrentsFromFolder()
     {
         // If the torrentsPath does not exist, we want to create it
@@ -374,8 +421,8 @@ public class TorrentService : ITorrentService
                 {
                     MaximumConnections = 60
                 };
-                var manager = await Engine.AddAsync(file, _downloadDirectory, settingsBuilder.ToSettings());
-                
+                var manager = await Engine.AddStreamingAsync(file, _downloadDirectory, settingsBuilder.ToSettings());
+
                 ActiveTorrents.Add(manager);
                 Console.WriteLine(manager.InfoHashes.V1OrV2.ToHex());
             }
